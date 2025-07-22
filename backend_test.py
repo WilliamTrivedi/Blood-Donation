@@ -95,7 +95,7 @@ class BloodDonationAPITester:
         """Test donor registration with invalid blood type"""
         donor_data = {
             "name": "John Smith",
-            "phone": "+1-555-012-4567",  # Fixed: proper phone
+            "phone": "+1-555-012-4567",  # Fixed: proper 11-digit phone
             "email": "john.smith@email.com",
             "blood_type": "X+",  # Invalid blood type
             "age": 35,

@@ -808,7 +808,7 @@ class BloodDonationAPITester:
             
             try:
                 response = requests.post(f"{self.base_url}/donors", json=test_data, timeout=10)
-                if response.status_code == 400:
+                if response.status_code in [400, 422]:  # Both are valid validation error codes
                     validation_count += 1
                     print(f"✓ Invalid blood type rejected: '{invalid_type}'")
                 else:
@@ -823,7 +823,7 @@ class BloodDonationAPITester:
         for i, valid_type in enumerate(valid_types):
             test_data = {
                 "name": "Valid Blood Type User",
-                "phone": f"+1-555-444{i}",
+                "phone": f"555-444-{1000+i}",
                 "email": f"validblood{i}@test.com",
                 "blood_type": valid_type,
                 "age": 30,

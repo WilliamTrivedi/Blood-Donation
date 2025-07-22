@@ -263,7 +263,7 @@ class BloodDonationAPITester:
         request_data = {
             "requester_name": "Dr. Smith",
             "patient_name": "Jane Doe",
-            "phone": "+1-555-0201",
+            "phone": "+1-555-020-1111",
             "email": "dr.smith@hospital.com",
             "blood_type_needed": "A+",
             "urgency": "Super Critical",  # Invalid urgency

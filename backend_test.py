@@ -839,7 +839,7 @@ class BloodDonationAPITester:
         hospital_data = {
             "name": "City General Medical Center",
             "license_number": "HOSP-2024-001",
-            "phone": "+1-555-0100",
+            "phone": "+1-555-010-0000",
             "email": "admin@citygeneral.com",
             "address": "123 Medical Drive, Suite 100",
             "city": "Boston",

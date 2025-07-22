@@ -26,6 +26,18 @@ class UserRole(str, Enum):
     ADMIN = "admin"
     GUEST = "guest"
 
+# Simple User class for auth purposes
+class User(BaseModel):
+    id: str
+    email: str
+    role: UserRole
+    is_active: bool = True
+    is_verified: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    last_login: Optional[datetime] = None
+    donor_id: Optional[str] = None
+    hospital_id: Optional[str] = None
+
 # Models
 class User(BaseModel):
     id: str

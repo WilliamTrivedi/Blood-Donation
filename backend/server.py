@@ -338,7 +338,7 @@ async def register_user(request: Request, user_data: UserCreate):
         
         # Create user account
         hashed_password = get_password_hash(user_data.password)
-        user = User(
+        user = UserDB(
             email=user_data.email,
             password_hash=hashed_password,
             role=user_data.role,
@@ -353,10 +353,22 @@ async def register_user(request: Request, user_data: UserCreate):
         access_token = create_access_token(token_data)
         refresh_token = create_refresh_token(token_data)
         
+        # Return simplified user for response (without password_hash)
+        response_user = User(
+            id=user.id,
+            email=user.email,
+            role=user.role,
+            is_active=user.is_active,
+            is_verified=user.is_verified,
+            created_at=user.created_at,
+            donor_id=user.donor_id,
+            hospital_id=user.hospital_id
+        )
+        
         return Token(
             access_token=access_token,
             refresh_token=refresh_token,
-            user=user
+            user=response_user
         )
         
     except ValueError as e:

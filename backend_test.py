@@ -1933,12 +1933,41 @@ class BloodDonationAPITester:
     
     def run_all_tests(self):
         """Run all tests in sequence"""
-        print("🩸 BLOOD DONATION APP - ENHANCED SECURITY TESTING")
-        print("=" * 70)
+        print("🩸 BLOOD DONATION APP - PHASE 2 AUTHENTICATION & HOSPITAL MANAGEMENT TESTING")
+        print("=" * 80)
         
-        # Test sequence - Core functionality first, then security
+        # Test sequence - Authentication first, then Hospital Management, then Enhanced Features
         tests = [
             ("API Health Check", self.test_api_health),
+            
+            # ========== PHASE 2 AUTHENTICATION SYSTEM TESTS ==========
+            ("🔐 User Registration - Donor Role", self.test_user_registration_donor),
+            ("🔐 User Registration - Hospital Role", self.test_user_registration_hospital),
+            ("🔐 Password Validation Requirements", self.test_password_validation),
+            ("🔐 Duplicate Email Registration", self.test_duplicate_email_registration),
+            ("🔐 User Login with Valid Credentials", self.test_user_login),
+            ("🔐 Invalid Login Credentials", self.test_invalid_login_credentials),
+            ("🔐 Demo Token System", self.test_demo_token_system),
+            ("🔐 JWT Token Validation", self.test_jwt_token_validation),
+            
+            # ========== HOSPITAL MANAGEMENT SYSTEM TESTS ==========
+            ("🏥 Hospital Registration", self.test_hospital_registration),
+            ("🏥 Hospital Duplicate Validation", self.test_hospital_duplicate_validation),
+            ("🏥 Hospital Verification Workflow", self.test_hospital_verification_workflow),
+            ("🏥 Hospital Public List Filtering", self.test_hospital_public_list),
+            
+            # ========== ENHANCED DONOR & REQUEST FEATURES TESTS ==========
+            ("👤 Authenticated Donor Management", self.test_authenticated_donor_management),
+            ("👤 Donor Ownership Validation", self.test_donor_ownership_validation),
+            ("🩸 Enhanced Blood Requests with Hospital", self.test_enhanced_blood_requests_with_hospital),
+            ("📊 Priority Scoring System", self.test_priority_scoring_system),
+            
+            # ========== SECURITY & INTEGRATION TESTS ==========
+            ("🔒 JWT Token Expiration", self.test_jwt_token_expiration),
+            ("🔒 Role Validation in Tokens", self.test_role_validation_in_tokens),
+            ("🔄 Backwards Compatibility", self.test_backwards_compatibility),
+            
+            # ========== ORIGINAL CORE FUNCTIONALITY TESTS ==========
             ("Valid Donor Registration", self.test_donor_registration_valid),
             ("Invalid Blood Type Validation", self.test_donor_registration_invalid_blood_type),
             ("Duplicate Email Validation", self.test_duplicate_donor_email),
@@ -1953,7 +1982,7 @@ class BloodDonationAPITester:
             ("Statistics Endpoint", self.test_statistics_endpoint),
             ("End-to-End Flow", self.test_end_to_end_flow),
             
-            # ========== ENHANCED SECURITY TESTS ==========
+            # ========== ENHANCED SECURITY TESTS - Phase 1 ==========
             ("🔐 Rate Limiting Protection", self.test_rate_limiting),
             ("🛡️ XSS Attack Prevention", self.test_input_sanitization_xss),
             ("📏 Input Length Validation", self.test_input_length_validation),
@@ -1968,6 +1997,8 @@ class BloodDonationAPITester:
         
         passed = 0
         failed = 0
+        phase2_passed = 0
+        phase2_total = 0
         security_passed = 0
         security_total = 0
         
@@ -1976,37 +2007,52 @@ class BloodDonationAPITester:
             try:
                 if test_func():
                     passed += 1
-                    if "🔐" in test_name or "🛡️" in test_name or "📏" in test_name or "📧" in test_name or "🩸" in test_name or "👤" in test_name or "⚠️" in test_name or "🎭" in test_name or "🔌" in test_name or "💉" in test_name:
+                    # Count Phase 2 features
+                    if any(emoji in test_name for emoji in ["🔐", "🏥", "👤", "🩸", "📊", "🔒", "🔄"]):
+                        phase2_passed += 1
+                    # Count security features
+                    if any(emoji in test_name for emoji in ["🔐", "🛡️", "📏", "📧", "🩸", "👤", "⚠️", "🎭", "🔌", "💉"]):
                         security_passed += 1
                 else:
                     failed += 1
                     
-                if "🔐" in test_name or "🛡️" in test_name or "📏" in test_name or "📧" in test_name or "🩸" in test_name or "👤" in test_name or "⚠️" in test_name or "🎭" in test_name or "🔌" in test_name or "💉" in test_name:
+                # Count totals
+                if any(emoji in test_name for emoji in ["🔐", "🏥", "👤", "🩸", "📊", "🔒", "🔄"]):
+                    phase2_total += 1
+                if any(emoji in test_name for emoji in ["🔐", "🛡️", "📏", "📧", "🩸", "👤", "⚠️", "🎭", "🔌", "💉"]):
                     security_total += 1
                     
             except Exception as e:
                 print(f"❌ FAIL: {test_name} - Exception: {str(e)}")
                 failed += 1
-                if "🔐" in test_name or "🛡️" in test_name or "📏" in test_name or "📧" in test_name or "🩸" in test_name or "👤" in test_name or "⚠️" in test_name or "🎭" in test_name or "🔌" in test_name or "💉" in test_name:
+                if any(emoji in test_name for emoji in ["🔐", "🏥", "👤", "🩸", "📊", "🔒", "🔄"]):
+                    phase2_total += 1
+                if any(emoji in test_name for emoji in ["🔐", "🛡️", "📏", "📧", "🩸", "👤", "⚠️", "🎭", "🔌", "💉"]):
                     security_total += 1
             
             time.sleep(0.5)  # Brief pause between tests
         
         # Summary
-        print("\n" + "=" * 70)
-        print("🩸 BLOOD DONATION API - ENHANCED SECURITY TEST SUMMARY")
-        print("=" * 70)
+        print("\n" + "=" * 80)
+        print("🩸 BLOOD DONATION API - PHASE 2 AUTHENTICATION & HOSPITAL MANAGEMENT TEST SUMMARY")
+        print("=" * 80)
         print(f"✅ TOTAL PASSED: {passed}")
         print(f"❌ TOTAL FAILED: {failed}")
         print(f"📊 OVERALL SUCCESS RATE: {(passed/(passed+failed)*100):.1f}%")
-        print(f"🔐 SECURITY TESTS PASSED: {security_passed}/{security_total}")
-        print(f"🛡️ SECURITY SUCCESS RATE: {(security_passed/security_total*100):.1f}%" if security_total > 0 else "🛡️ SECURITY SUCCESS RATE: N/A")
+        print(f"🚀 PHASE 2 FEATURES PASSED: {phase2_passed}/{phase2_total}")
+        print(f"🔐 PHASE 2 SUCCESS RATE: {(phase2_passed/phase2_total*100):.1f}%" if phase2_total > 0 else "🔐 PHASE 2 SUCCESS RATE: N/A")
+        print(f"🛡️ SECURITY TESTS PASSED: {security_passed}/{security_total}")
+        print(f"🔒 SECURITY SUCCESS RATE: {(security_passed/security_total*100):.1f}%" if security_total > 0 else "🔒 SECURITY SUCCESS RATE: N/A")
         
         if failed == 0:
-            print("\n🎉 ALL TESTS PASSED! Blood donation backend with enhanced security is working correctly.")
-            print("🔒 SECURITY HARDENING VERIFIED - System properly rejects malicious inputs!")
+            print("\n🎉 ALL TESTS PASSED! Blood donation backend with Phase 2 Authentication & Hospital Management is working correctly.")
+            print("🔐 AUTHENTICATION SYSTEM VERIFIED - User registration, login, and role-based access working!")
+            print("🏥 HOSPITAL MANAGEMENT VERIFIED - Registration, verification workflow, and integration working!")
+            print("🔒 SECURITY HARDENING VERIFIED - System properly rejects malicious inputs and enforces access control!")
         else:
             print(f"\n⚠️  {failed} tests failed. Check the details above.")
+            if phase2_total > 0 and phase2_passed < phase2_total:
+                print(f"🚨 PHASE 2 CONCERN: {phase2_total - phase2_passed} Phase 2 authentication/hospital features failed!")
             if security_total > 0 and security_passed < security_total:
                 print(f"🚨 SECURITY CONCERN: {security_total - security_passed} security tests failed!")
         

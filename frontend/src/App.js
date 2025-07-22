@@ -1300,6 +1300,16 @@ function BloodConnectApp() {
         </div>
       </nav>
 
+      {/* Login Modal */}
+      <LoginModal 
+        show={showLoginModal} 
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={(user) => {
+          console.log('Login successful:', user);
+          fetchStats();
+        }}
+      />
+
       {/* Main Content */}
       {activeTab === "home" && renderHome()}
       {activeTab === "register-donor" && renderDonorRegistration()}

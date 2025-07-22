@@ -291,7 +291,7 @@ class BloodDonationAPITester:
             {
                 "requester_name": "Dr. Lisa Park",
                 "patient_name": "Thomas Anderson",
-                "phone": "+1-555-0202",
+                "phone": "+1-555-020-2222",
                 "email": "dr.park@medical.com",
                 "blood_type_needed": "A+",
                 "urgency": "Urgent",

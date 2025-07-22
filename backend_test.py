@@ -2,7 +2,7 @@
 """
 Comprehensive Backend Testing for Blood Donation App
 Tests all API endpoints with realistic blood donation scenarios
-ENHANCED SECURITY TESTING - Phase 1 Security Features
+PHASE 2 AUTHENTICATION & HOSPITAL MANAGEMENT TESTING
 """
 
 import requests

@@ -327,8 +327,8 @@ class EmergencyAlert(BaseModel):
     success_rate: float = 0.0
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-# User Models (moved from auth.py for consistency)
-class User(BaseModel):
+# User Models for database storage (extends auth User)
+class UserDB(BaseModel):
     id: str = Field(default_factory=generate_secure_id)
     email: str
     password_hash: str

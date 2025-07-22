@@ -2,6 +2,7 @@
 """
 Comprehensive Backend Testing for Blood Donation App
 Tests all API endpoints with realistic blood donation scenarios
+ENHANCED SECURITY TESTING - Phase 1 Security Features
 """
 
 import requests
@@ -9,6 +10,9 @@ import json
 import sys
 from datetime import datetime
 import time
+import threading
+import websocket
+import ssl
 
 # Get backend URL from frontend .env
 BACKEND_URL = "https://db5e780c-892a-43cc-9ec0-32f449f89e8d.preview.emergentagent.com/api"

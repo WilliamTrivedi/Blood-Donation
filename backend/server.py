@@ -66,6 +66,18 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Blood type compatibility mapping
+BLOOD_COMPATIBILITY = {
+    "O-": ["O-", "O+", "A-", "A+", "B-", "B+", "AB-", "AB+"],
+    "O+": ["O+", "A+", "B+", "AB+"],
+    "A-": ["A-", "A+", "AB-", "AB+"],
+    "A+": ["A+", "AB+"],
+    "B-": ["B-", "B+", "AB-", "AB+"],
+    "B+": ["B+", "AB+"],
+    "AB-": ["AB-", "AB+"],
+    "AB+": ["AB+"]
+}
+
 # Input validation and sanitization functions
 def validate_phone(phone: str) -> bool:
     """Validate phone number format - allow common phone formats"""

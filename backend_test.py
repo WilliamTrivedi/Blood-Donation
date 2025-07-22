@@ -1134,7 +1134,7 @@ class BloodDonationAPITester:
         request_data = {
             "requester_name": "Dr. Sarah Kim",
             "patient_name": "Jennifer Lee",
-            "phone": "+1-555-0400",
+            "phone": "+1-555-040-0000",
             "email": "dr.kim@citygeneral.com",
             "blood_type_needed": "A+",
             "urgency": "Critical",

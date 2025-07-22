@@ -475,7 +475,7 @@ async def websocket_endpoint(websocket: WebSocket):
 # Routes with rate limiting
 @api_router.get("/")
 @limiter.limit("10/minute")
-async def root(request):
+async def root(request: Request):
     return {
         "message": "BloodConnect Emergency Response System API",
         "disclaimer": "FOR DEMONSTRATION PURPOSES ONLY - Not for actual medical emergencies",
@@ -485,7 +485,7 @@ async def root(request):
 # Donor routes
 @api_router.post("/donors", response_model=Donor)
 @limiter.limit("5/minute")
-async def register_donor(request, donor_data: DonorCreate):
+async def register_donor(request: Request, donor_data: DonorCreate):
     try:
         # Check if donor already exists
         existing_donor = await db.donors.find_one({"email": donor_data.email})
@@ -514,7 +514,7 @@ async def register_donor(request, donor_data: DonorCreate):
 
 @api_router.get("/donors", response_model=List[Donor])
 @limiter.limit("20/minute")
-async def get_donors(request):
+async def get_donors(request: Request):
     try:
         donors = await db.donors.find({"is_available": True}).to_list(1000)
         return [Donor(**donor) for donor in donors]
@@ -523,7 +523,7 @@ async def get_donors(request):
 
 @api_router.get("/donors/{donor_id}", response_model=Donor)
 @limiter.limit("30/minute")
-async def get_donor(request, donor_id: str):
+async def get_donor(request: Request, donor_id: str):
     try:
         donor_id = sanitize_input(donor_id)
         donor = await db.donors.find_one({"id": donor_id})
@@ -538,7 +538,7 @@ async def get_donor(request, donor_id: str):
 # Blood Request routes
 @api_router.post("/blood-requests", response_model=BloodRequest)
 @limiter.limit("10/minute")
-async def create_blood_request(request, request_data: BloodRequestCreate):
+async def create_blood_request(request: Request, request_data: BloodRequestCreate):
     try:
         blood_request = BloodRequest(**request_data.dict())
         await db.blood_requests.insert_one(blood_request.dict())
@@ -564,7 +564,7 @@ async def create_blood_request(request, request_data: BloodRequestCreate):
 
 @api_router.get("/blood-requests", response_model=List[BloodRequest])
 @limiter.limit("20/minute")
-async def get_blood_requests(request):
+async def get_blood_requests(request: Request):
     try:
         requests = await db.blood_requests.find({"status": "Active"}).sort("created_at", -1).to_list(1000)
         return [BloodRequest(**req) for req in requests]
@@ -573,7 +573,7 @@ async def get_blood_requests(request):
 
 @api_router.get("/blood-requests/{request_id}", response_model=BloodRequest)
 @limiter.limit("30/minute")
-async def get_blood_request(request, request_id: str):
+async def get_blood_request(request: Request, request_id: str):
     try:
         request_id = sanitize_input(request_id)
         blood_req = await db.blood_requests.find_one({"id": request_id})
@@ -588,7 +588,7 @@ async def get_blood_request(request, request_id: str):
 # Matching route
 @api_router.get("/match-donors/{request_id}")
 @limiter.limit("15/minute")
-async def match_donors(request, request_id: str):
+async def match_donors(request: Request, request_id: str):
     try:
         request_id = sanitize_input(request_id)
         # Get the blood request
@@ -637,7 +637,7 @@ async def match_donors(request, request_id: str):
 # Alert management routes
 @api_router.get("/alerts/recent")
 @limiter.limit("10/minute")
-async def get_recent_alerts(request):
+async def get_recent_alerts(request: Request):
     try:
         alerts = await db.emergency_alerts.find().sort("created_at", -1).limit(50).to_list(50)
         return [EmergencyAlert(**alert) for alert in alerts]
@@ -646,7 +646,7 @@ async def get_recent_alerts(request):
 
 @api_router.post("/alerts/send-reminder/{request_id}")
 @limiter.limit("3/minute")
-async def send_reminder_alert(request, request_id: str):
+async def send_reminder_alert(request: Request, request_id: str):
     try:
         request_id = sanitize_input(request_id)
         blood_req = await db.blood_requests.find_one({"id": request_id})
@@ -674,7 +674,7 @@ async def send_reminder_alert(request, request_id: str):
 # Statistics with real-time data
 @api_router.get("/stats")
 @limiter.limit("30/minute")
-async def get_stats(request):
+async def get_stats(request: Request):
     try:
         total_donors = await db.donors.count_documents({"is_available": True})
         online_donors = await db.donors.count_documents({"is_available": True, "is_online": True})

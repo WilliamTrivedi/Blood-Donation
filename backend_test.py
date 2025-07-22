@@ -1209,7 +1209,7 @@ class BloodDonationAPITester:
             request_data = {
                 "requester_name": f"Dr. Priority Test {urgency}",
                 "patient_name": f"Patient {urgency}",
-                "phone": "+1-555-0500",
+                "phone": "+1-555-050-0000",
                 "email": f"priority.{urgency.lower()}@test.com",
                 "blood_type_needed": "B+",
                 "urgency": urgency,

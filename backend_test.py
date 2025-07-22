@@ -902,7 +902,7 @@ class BloodDonationAPITester:
             "zip_code": "02139",
             "contact_person_name": "Dr. John Smith",
             "contact_person_title": "Administrator",
-            "contact_person_phone": "+1-555-0201",
+            "contact_person_phone": "+1-555-020-1111",
             "contact_person_email": "j.smith@different.com"
         }
         

@@ -488,7 +488,7 @@ class BloodDonationAPITester:
         # 1. Register a new donor
         donor_data = {
             "name": "Alex Thompson",
-            "phone": "+1-555-0300",
+            "phone": "+1-555-030-0000",
             "email": "alex.thompson@email.com",
             "blood_type": "O-",
             "age": 26,
@@ -1038,7 +1038,7 @@ class BloodDonationAPITester:
         # Register donor with authentication
         donor_data = {
             "name": "Alex Thompson",
-            "phone": "+1-555-0300",
+            "phone": "+1-555-030-0000",
             "email": "alex.thompson@email.com",
             "blood_type": "O-",
             "age": 26,

@@ -745,11 +745,13 @@ function App() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Blood Type</label>
+              <label className="block text-sm font-medium text-gray-700">Blood Type *</label>
               <select
                 value={donorForm.blood_type}
                 onChange={(e) => setDonorForm({...donorForm, blood_type: e.target.value})}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 border p-2"
+                className={`mt-1 block w-full rounded-md shadow-sm focus:ring-red-500 border p-2 ${
+                  formErrors.blood_type ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-red-500'
+                }`}
                 required
               >
                 <option value="">Select Blood Type</option>
@@ -757,18 +759,22 @@ function App() {
                   <option key={type} value={type}>{type}</option>
                 ))}
               </select>
+              {renderFormError('blood_type')}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Age</label>
+              <label className="block text-sm font-medium text-gray-700">Age * (18-65)</label>
               <input
                 type="number"
                 min="18"
                 max="65"
                 value={donorForm.age}
                 onChange={(e) => setDonorForm({...donorForm, age: e.target.value})}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 border p-2"
+                className={`mt-1 block w-full rounded-md shadow-sm focus:ring-red-500 border p-2 ${
+                  formErrors.age ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-red-500'
+                }`}
                 required
               />
+              {renderFormError('age')}
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

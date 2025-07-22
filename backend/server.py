@@ -389,7 +389,7 @@ async def login_user(request: Request, login_data: UserLogin):
                 detail="Incorrect email or password"
             )
         
-        user = User(**user_data)
+        user = UserDB(**user_data)
         if not user.is_active:
             raise HTTPException(status_code=401, detail="Account is deactivated")
         
@@ -404,10 +404,23 @@ async def login_user(request: Request, login_data: UserLogin):
         access_token = create_access_token(token_data)
         refresh_token = create_refresh_token(token_data)
         
+        # Return simplified user for response (without password_hash)
+        response_user = User(
+            id=user.id,
+            email=user.email,
+            role=user.role,
+            is_active=user.is_active,
+            is_verified=user.is_verified,
+            created_at=user.created_at,
+            last_login=user.last_login,
+            donor_id=user.donor_id,
+            hospital_id=user.hospital_id
+        )
+        
         return Token(
             access_token=access_token,
             refresh_token=refresh_token,
-            user=user
+            user=response_user
         )
         
     except HTTPException:

@@ -875,7 +875,7 @@ class BloodDonationAPITester:
             
             try:
                 response = requests.post(f"{self.base_url}/donors", json=test_data, timeout=10)
-                if response.status_code == 400:
+                if response.status_code in [400, 422]:  # Both are valid validation error codes
                     invalid_rejected += 1
                     print(f"✓ Invalid age rejected: {age}")
                 else:
@@ -887,7 +887,7 @@ class BloodDonationAPITester:
         for i, age in enumerate(valid_ages):
             test_data = {
                 "name": "Valid Age User",
-                "phone": f"+1-555-222{i}",
+                "phone": f"555-222-{1000+i}",
                 "email": f"validage{i}@test.com",
                 "blood_type": "A+",
                 "age": age,

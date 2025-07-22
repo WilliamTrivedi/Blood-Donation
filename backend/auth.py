@@ -38,20 +38,6 @@ class User(BaseModel):
     donor_id: Optional[str] = None
     hospital_id: Optional[str] = None
 
-# Models
-class User(BaseModel):
-    id: str
-    email: str
-    role: UserRole
-    is_active: bool = True
-    is_verified: bool = False
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    last_login: Optional[datetime] = None
-    
-    # Role-specific data
-    donor_id: Optional[str] = None  # Links to donor profile
-    hospital_id: Optional[str] = None  # Links to hospital profile
-
 class UserCreate(BaseModel):
     email: str
     password: str

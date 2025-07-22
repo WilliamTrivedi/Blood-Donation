@@ -224,7 +224,7 @@ class BloodDonationAPITester:
         request_data = {
             "requester_name": "Dr. Amanda Foster",
             "patient_name": "Robert Martinez",
-            "phone": "+1-555-0200",
+            "phone": "+1-555-020-0000",
             "email": "dr.foster@hospital.com",
             "blood_type_needed": "O-",
             "urgency": "Critical",

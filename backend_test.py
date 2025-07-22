@@ -681,7 +681,7 @@ class BloodDonationAPITester:
             
             try:
                 response = requests.post(f"{self.base_url}/donors", json=test_data, timeout=10)
-                if response.status_code == 400:
+                if response.status_code in [400, 422]:  # Both are valid validation error codes
                     validation_working += 1
                     print(f"✓ {description} - Correctly rejected")
                 else:

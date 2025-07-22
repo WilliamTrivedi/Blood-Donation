@@ -15,13 +15,24 @@ from pathlib import Path
 from pydantic import BaseModel, Field, validator
 from typing import List, Optional
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import asyncio
 import re
 import bleach
 import hashlib
 import secrets
+
+# Import our custom modules
+from auth import (
+    UserRole, get_current_user, get_current_user_optional, require_role, require_roles,
+    create_access_token, create_refresh_token, verify_password, get_password_hash,
+    validate_password, Token, UserLogin, create_demo_token
+)
+from models import (
+    Donor, DonorCreate, BloodRequest, BloodRequestCreate, Hospital, HospitalCreate,
+    EmergencyAlert, User, UserCreate, HospitalStatus, BloodRequestStatus, BloodRequestUrgency
+)
 
 
 ROOT_DIR = Path(__file__).parent

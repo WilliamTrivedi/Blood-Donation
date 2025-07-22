@@ -1141,10 +1141,10 @@ class BloodDonationAPITester:
     
     def run_all_tests(self):
         """Run all tests in sequence"""
-        print("🩸 BLOOD DONATION APP - BACKEND API TESTING")
-        print("=" * 60)
+        print("🩸 BLOOD DONATION APP - ENHANCED SECURITY TESTING")
+        print("=" * 70)
         
-        # Test sequence
+        # Test sequence - Core functionality first, then security
         tests = [
             ("API Health Check", self.test_api_health),
             ("Valid Donor Registration", self.test_donor_registration_valid),
@@ -1160,36 +1160,63 @@ class BloodDonationAPITester:
             ("Blood Compatibility Rules", self.test_blood_compatibility_rules),
             ("Statistics Endpoint", self.test_statistics_endpoint),
             ("End-to-End Flow", self.test_end_to_end_flow),
+            
+            # ========== ENHANCED SECURITY TESTS ==========
+            ("🔐 Rate Limiting Protection", self.test_rate_limiting),
+            ("🛡️ XSS Attack Prevention", self.test_input_sanitization_xss),
+            ("📏 Input Length Validation", self.test_input_length_validation),
+            ("📧 Phone & Email Validation", self.test_phone_email_validation),
+            ("🩸 Enhanced Blood Type Validation", self.test_blood_type_validation_enhanced),
+            ("👤 Age Restrictions (18-65)", self.test_age_restrictions),
+            ("⚠️ Enhanced Error Handling", self.test_enhanced_error_handling),
+            ("🎭 Demo Mode Features", self.test_demo_mode_features),
+            ("🔌 WebSocket Security", self.test_websocket_security),
+            ("💉 Units Needed Validation", self.test_units_needed_validation),
         ]
         
         passed = 0
         failed = 0
+        security_passed = 0
+        security_total = 0
         
         for test_name, test_func in tests:
             print(f"\n--- {test_name} ---")
             try:
                 if test_func():
                     passed += 1
+                    if "🔐" in test_name or "🛡️" in test_name or "📏" in test_name or "📧" in test_name or "🩸" in test_name or "👤" in test_name or "⚠️" in test_name or "🎭" in test_name or "🔌" in test_name or "💉" in test_name:
+                        security_passed += 1
                 else:
                     failed += 1
+                    
+                if "🔐" in test_name or "🛡️" in test_name or "📏" in test_name or "📧" in test_name or "🩸" in test_name or "👤" in test_name or "⚠️" in test_name or "🎭" in test_name or "🔌" in test_name or "💉" in test_name:
+                    security_total += 1
+                    
             except Exception as e:
                 print(f"❌ FAIL: {test_name} - Exception: {str(e)}")
                 failed += 1
+                if "🔐" in test_name or "🛡️" in test_name or "📏" in test_name or "📧" in test_name or "🩸" in test_name or "👤" in test_name or "⚠️" in test_name or "🎭" in test_name or "🔌" in test_name or "💉" in test_name:
+                    security_total += 1
             
             time.sleep(0.5)  # Brief pause between tests
         
         # Summary
-        print("\n" + "=" * 60)
-        print("🩸 BLOOD DONATION API TEST SUMMARY")
-        print("=" * 60)
-        print(f"✅ PASSED: {passed}")
-        print(f"❌ FAILED: {failed}")
-        print(f"📊 SUCCESS RATE: {(passed/(passed+failed)*100):.1f}%")
+        print("\n" + "=" * 70)
+        print("🩸 BLOOD DONATION API - ENHANCED SECURITY TEST SUMMARY")
+        print("=" * 70)
+        print(f"✅ TOTAL PASSED: {passed}")
+        print(f"❌ TOTAL FAILED: {failed}")
+        print(f"📊 OVERALL SUCCESS RATE: {(passed/(passed+failed)*100):.1f}%")
+        print(f"🔐 SECURITY TESTS PASSED: {security_passed}/{security_total}")
+        print(f"🛡️ SECURITY SUCCESS RATE: {(security_passed/security_total*100):.1f}%" if security_total > 0 else "🛡️ SECURITY SUCCESS RATE: N/A")
         
         if failed == 0:
-            print("\n🎉 ALL TESTS PASSED! Blood donation backend is working correctly.")
+            print("\n🎉 ALL TESTS PASSED! Blood donation backend with enhanced security is working correctly.")
+            print("🔒 SECURITY HARDENING VERIFIED - System properly rejects malicious inputs!")
         else:
             print(f"\n⚠️  {failed} tests failed. Check the details above.")
+            if security_total > 0 and security_passed < security_total:
+                print(f"🚨 SECURITY CONCERN: {security_total - security_passed} security tests failed!")
         
         return failed == 0
 

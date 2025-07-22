@@ -15,7 +15,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 # Get backend URL from frontend .env
-BACKEND_URL = "https://db5e780c-892a-43cc-9ec0-32f449f89e8d.preview.emergentagent.com"
+BACKEND_URL = "https://77b2b468-40b4-4042-a5a6-f3da0cc2b196.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 WS_URL = BACKEND_URL.replace("https://", "wss://") + "/ws"
 

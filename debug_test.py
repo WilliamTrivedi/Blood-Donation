@@ -6,7 +6,7 @@ Debug script to test backend functionality
 import requests
 import json
 
-BACKEND_URL = "https://db5e780c-892a-43cc-9ec0-32f449f89e8d.preview.emergentagent.com/api"
+BACKEND_URL = "https://77b2b468-40b4-4042-a5a6-f3da0cc2b196.preview.emergentagent.com/api"
 
 def test_basic_endpoints():
     """Test basic endpoints"""

@@ -303,7 +303,7 @@ class BloodDonationAPITester:
             {
                 "requester_name": "Dr. James Wright",
                 "patient_name": "Maria Garcia",
-                "phone": "+1-555-0203",
+                "phone": "+1-555-020-3333",
                 "email": "dr.wright@clinic.com",
                 "blood_type_needed": "AB+",
                 "urgency": "Normal",

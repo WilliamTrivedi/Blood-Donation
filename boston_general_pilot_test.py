@@ -291,10 +291,13 @@ class BostonGeneralPilotTester:
         print("=" * 60)
         
         # Register O- donor in Boston area
+        import time
+        unique_id = int(time.time())
+        
         o_negative_donor = {
             "name": "Michael O'Connor",
             "phone": "+1-617-555-1001",
-            "email": "michael.oconnor@email.com",
+            "email": f"michael.oconnor.{unique_id}@email.com",
             "blood_type": "O-",
             "age": 32,
             "city": "Boston",
@@ -305,7 +308,7 @@ class BostonGeneralPilotTester:
         a_positive_donor = {
             "name": "Jennifer Walsh",
             "phone": "+1-617-555-1002",
-            "email": "jennifer.walsh@email.com",
+            "email": f"jennifer.walsh.{unique_id}@email.com",
             "blood_type": "A+",
             "age": 28,
             "city": "Boston",

@@ -597,23 +597,48 @@ async def update_donor(request: Request, donor_id: str, donor_data: DonorCreate,
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")
 
-# Blood Request routes
+# Blood Request routes (enhanced with hospital integration)
 @api_router.post("/blood-requests", response_model=BloodRequest)
 @limiter.limit("10/minute")
-async def create_blood_request(request: Request, request_data: BloodRequestCreate):
+async def create_blood_request(request: Request, request_data: BloodRequestCreate, current_user: User = Depends(get_current_user_optional)):
     try:
         blood_request = BloodRequest(**request_data.dict())
+        
+        # Enhanced processing for hospital users
+        if current_user:
+            blood_request.user_id = current_user.id
+            
+            # If user is hospital, verify and link to hospital
+            if current_user.role == UserRole.HOSPITAL and current_user.hospital_id:
+                hospital = await db.hospitals.find_one({"id": current_user.hospital_id})
+                if hospital and hospital.get("status") == HospitalStatus.VERIFIED.value:
+                    blood_request.hospital_id = current_user.hospital_id
+                    blood_request.hospital_name = hospital.get("name", blood_request.hospital_name)
+                    # Increase priority for verified hospitals
+                    blood_request.priority_score += 2.0
+        
+        # Set expiration based on urgency
+        if blood_request.urgency == BloodRequestUrgency.CRITICAL:
+            blood_request.expires_at = datetime.utcnow() + timedelta(hours=6)
+            blood_request.priority_score += 5.0
+        elif blood_request.urgency == BloodRequestUrgency.URGENT:
+            blood_request.expires_at = datetime.utcnow() + timedelta(hours=24)
+            blood_request.priority_score += 2.0
+        else:
+            blood_request.expires_at = datetime.utcnow() + timedelta(days=7)
+        
         await db.blood_requests.insert_one(blood_request.dict())
         
         # Send emergency alerts for Critical and Urgent requests
-        if blood_request.urgency in ["Critical", "Urgent"]:
+        if blood_request.urgency in [BloodRequestUrgency.CRITICAL, BloodRequestUrgency.URGENT]:
             asyncio.create_task(manager.notify_compatible_donors(blood_request.dict()))
             
             # Save alert record
             alert = EmergencyAlert(
                 blood_request_id=blood_request.id,
-                alert_type=blood_request.urgency.lower(),
-                donors_notified=len(manager.active_connections)
+                alert_type=blood_request.urgency.value.lower(),
+                donors_notified=len(manager.active_connections),
+                hospitals_notified=1 if current_user and current_user.role == UserRole.HOSPITAL else 0
             )
             await db.emergency_alerts.insert_one(alert.dict())
         
@@ -626,25 +651,86 @@ async def create_blood_request(request: Request, request_data: BloodRequestCreat
 
 @api_router.get("/blood-requests", response_model=List[BloodRequest])
 @limiter.limit("20/minute")
-async def get_blood_requests(request: Request):
+async def get_blood_requests(request: Request, status: Optional[BloodRequestStatus] = None, urgency: Optional[BloodRequestUrgency] = None, current_user: User = Depends(get_current_user_optional)):
     try:
-        requests = await db.blood_requests.find({"status": "Active"}).sort("created_at", -1).to_list(1000)
+        query = {}
+        
+        # Filter by status if provided
+        if status:
+            query["status"] = status.value
+        else:
+            query["status"] = BloodRequestStatus.ACTIVE.value
+        
+        # Filter by urgency if provided
+        if urgency:
+            query["urgency"] = urgency.value
+        
+        # Hospital users can see their own requests plus all active ones
+        if current_user and current_user.role == UserRole.HOSPITAL:
+            query = {
+                "$or": [
+                    query,
+                    {"user_id": current_user.id}
+                ]
+            }
+        
+        requests = await db.blood_requests.find(query).sort("priority_score", -1).sort("created_at", -1).to_list(1000)
         return [BloodRequest(**req) for req in requests]
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @api_router.get("/blood-requests/{request_id}", response_model=BloodRequest)
 @limiter.limit("30/minute")
-async def get_blood_request(request: Request, request_id: str):
+async def get_blood_request(request: Request, request_id: str, current_user: User = Depends(get_current_user_optional)):
     try:
+        from models import sanitize_input
         request_id = sanitize_input(request_id)
         blood_req = await db.blood_requests.find_one({"id": request_id})
         if not blood_req:
             raise HTTPException(status_code=404, detail="Blood request not found")
+        
+        # Increment views count
+        await db.blood_requests.update_one(
+            {"id": request_id},
+            {"$inc": {"views_count": 1}}
+        )
+        
         return BloodRequest(**blood_req)
     except Exception as e:
         if isinstance(e, HTTPException):
             raise
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@api_router.put("/blood-requests/{request_id}/status")
+@limiter.limit("10/minute")
+async def update_request_status(request: Request, request_id: str, status: BloodRequestStatus, current_user: User = Depends(require_roles([UserRole.HOSPITAL, UserRole.ADMIN]))):
+    """Update blood request status (hospital or admin only)"""
+    try:
+        from models import sanitize_input
+        request_id = sanitize_input(request_id)
+        
+        # Check if user owns this request (for hospitals) or is admin
+        if current_user.role == UserRole.HOSPITAL:
+            blood_req = await db.blood_requests.find_one({"id": request_id})
+            if not blood_req or blood_req.get("user_id") != current_user.id:
+                raise HTTPException(status_code=403, detail="Access denied. You can only update your own requests.")
+        
+        result = await db.blood_requests.update_one(
+            {"id": request_id},
+            {"$set": {
+                "status": status.value,
+                "updated_at": datetime.utcnow()
+            }}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Blood request not found")
+        
+        return {"message": f"Request status updated to {status.value}"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")
 
 # Matching route

@@ -64,13 +64,20 @@ def validate_phone(phone: str) -> bool:
     clean_phone = re.sub(r'[^\d\+]', '', phone)
     # Must have at least 10 digits
     digits_only = re.sub(r'[^\d]', '', clean_phone)
-    if len(digits_only) < 10:
+    
+    # Debug print
+    print(f"Phone validation: '{phone}' -> clean: '{clean_phone}' -> digits: '{digits_only}' -> len: {len(digits_only)}")
+    
+    if len(digits_only) < 10 or len(digits_only) > 15:
         return False
-    # Allow + at the beginning
+    
+    # Allow + at the beginning, but not required
     if clean_phone.startswith('+'):
-        return len(digits_only) >= 10 and len(digits_only) <= 15
+        # Must have country code (1-3 digits) + at least 10 more digits
+        return len(digits_only) >= 10
     else:
-        return len(digits_only) >= 10 and len(digits_only) <= 15
+        # Just digits, at least 10
+        return len(digits_only) >= 10
 
 def validate_email(email: str) -> bool:
     """Validate email format"""

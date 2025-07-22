@@ -356,7 +356,7 @@ async def register_user(request: Request, user_data: UserCreate):
         return Token(
             access_token=access_token,
             refresh_token=refresh_token,
-            user=user.dict()
+            user=user
         )
         
     except ValueError as e:

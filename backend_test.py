@@ -509,7 +509,7 @@ class BloodDonationAPITester:
             request_data = {
                 "requester_name": "Dr. Sarah Kim",
                 "patient_name": "Jennifer Lee",
-                "phone": "+1-555-0301",
+                "phone": "+1-555-030-1111",
                 "email": "dr.kim@seattle-hospital.com",
                 "blood_type_needed": "A+",
                 "urgency": "Critical",
@@ -1061,7 +1061,7 @@ class BloodDonationAPITester:
                     donor_id = donor["id"]
                     update_data = {
                         "name": "Alex Thompson Updated",
-                        "phone": "+1-555-0301",
+                        "phone": "+1-555-030-1111",
                         "email": "alex.thompson@email.com",
                         "blood_type": "O-",
                         "age": 27,

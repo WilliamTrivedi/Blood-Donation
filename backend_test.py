@@ -146,7 +146,7 @@ class BloodDonationAPITester:
         donors = [
             {
                 "name": "Michael Chen",
-                "phone": "+1-555-0125",
+                "phone": "+1-555-012-5678",  # Fixed
                 "email": "michael.chen@email.com",
                 "blood_type": "A+",
                 "age": 32,
@@ -155,7 +155,7 @@ class BloodDonationAPITester:
             },
             {
                 "name": "Emily Rodriguez",
-                "phone": "+1-555-0126",
+                "phone": "+1-555-012-6789",  # Fixed
                 "email": "emily.rodriguez@email.com",
                 "blood_type": "B-",
                 "age": 29,
@@ -164,7 +164,7 @@ class BloodDonationAPITester:
             },
             {
                 "name": "David Wilson",
-                "phone": "+1-555-0127",
+                "phone": "+1-555-012-7890",  # Fixed
                 "email": "david.wilson@email.com",
                 "blood_type": "AB+",
                 "age": 41,

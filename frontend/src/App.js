@@ -779,24 +779,32 @@ function App() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">City</label>
+              <label className="block text-sm font-medium text-gray-700">City *</label>
               <input
                 type="text"
                 value={donorForm.city}
                 onChange={(e) => setDonorForm({...donorForm, city: e.target.value})}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 border p-2"
+                className={`mt-1 block w-full rounded-md shadow-sm focus:ring-red-500 border p-2 ${
+                  formErrors.city ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-red-500'
+                }`}
                 required
+                maxLength="100"
               />
+              {renderFormError('city')}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">State</label>
+              <label className="block text-sm font-medium text-gray-700">State *</label>
               <input
                 type="text"
                 value={donorForm.state}
                 onChange={(e) => setDonorForm({...donorForm, state: e.target.value})}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 border p-2"
+                className={`mt-1 block w-full rounded-md shadow-sm focus:ring-red-500 border p-2 ${
+                  formErrors.state ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-red-500'
+                }`}
                 required
+                maxLength="100"
               />
+              {renderFormError('state')}
             </div>
           </div>
           

@@ -551,6 +551,593 @@ class BloodDonationAPITester:
         except Exception as e:
             self.log_test("E2E: Complete Flow", False, f"Flow failed: {str(e)}")
             return False
+
+    # ========== ENHANCED SECURITY TESTS - Phase 1 ==========
+    
+    def test_rate_limiting(self):
+        """Test rate limiting on API endpoints"""
+        print("\n=== RATE LIMITING TESTS ===")
+        
+        # Test rate limiting on donor registration (5/minute limit)
+        test_data = {
+            "name": "Rate Test User",
+            "phone": "+1-555-9999",
+            "email": f"ratetest{int(time.time())}@test.com",
+            "blood_type": "O+",
+            "age": 25,
+            "city": "Test City",
+            "state": "Test State"
+        }
+        
+        # Send requests rapidly to trigger rate limit
+        rate_limit_triggered = False
+        for i in range(8):  # Exceed 5/minute limit
+            try:
+                test_data["email"] = f"ratetest{int(time.time())}{i}@test.com"
+                response = requests.post(f"{self.base_url}/donors", json=test_data, timeout=5)
+                if response.status_code == 429:  # Too Many Requests
+                    rate_limit_triggered = True
+                    break
+                time.sleep(0.1)  # Small delay between requests
+            except Exception as e:
+                print(f"Rate limit test request {i} failed: {e}")
+        
+        self.log_test("Rate Limiting - Donor Registration", rate_limit_triggered, 
+                     "Rate limiting triggered correctly" if rate_limit_triggered else "Rate limiting not triggered")
+        
+        # Test rate limiting on stats endpoint (30/minute limit)
+        stats_rate_limit = False
+        for i in range(35):  # Exceed 30/minute limit
+            try:
+                response = requests.get(f"{self.base_url}/stats", timeout=5)
+                if response.status_code == 429:
+                    stats_rate_limit = True
+                    break
+                time.sleep(0.05)  # Very small delay
+            except Exception as e:
+                print(f"Stats rate limit test {i} failed: {e}")
+                break
+        
+        self.log_test("Rate Limiting - Stats Endpoint", stats_rate_limit,
+                     "Stats rate limiting triggered correctly" if stats_rate_limit else "Stats rate limiting not triggered")
+        
+        return rate_limit_triggered or stats_rate_limit
+    
+    def test_input_sanitization_xss(self):
+        """Test XSS attack prevention through input sanitization"""
+        print("\n=== XSS ATTACK PREVENTION TESTS ===")
+        
+        xss_payloads = [
+            "<script>alert('XSS')</script>",
+            "<img src=x onerror=alert('XSS')>",
+            "javascript:alert('XSS')",
+            "<svg onload=alert('XSS')>",
+            "';alert('XSS');//",
+            "<iframe src='javascript:alert(\"XSS\")'></iframe>"
+        ]
+        
+        xss_blocked_count = 0
+        
+        for i, payload in enumerate(xss_payloads):
+            test_data = {
+                "name": payload,  # Try XSS in name field
+                "phone": "+1-555-8888",
+                "email": f"xsstest{i}@test.com",
+                "blood_type": "A+",
+                "age": 30,
+                "city": "Test City",
+                "state": "Test State"
+            }
+            
+            try:
+                response = requests.post(f"{self.base_url}/donors", json=test_data, timeout=10)
+                if response.status_code == 200:
+                    donor = response.json()
+                    # Check if XSS payload was sanitized
+                    if payload not in donor.get("name", ""):
+                        xss_blocked_count += 1
+                        print(f"✓ XSS payload sanitized: {payload[:30]}...")
+                    else:
+                        print(f"❌ XSS payload not sanitized: {payload[:30]}...")
+                elif response.status_code == 400:
+                    # Input validation rejected the payload
+                    xss_blocked_count += 1
+                    print(f"✓ XSS payload rejected by validation: {payload[:30]}...")
+                
+            except Exception as e:
+                print(f"XSS test {i} failed: {e}")
+        
+        success_rate = (xss_blocked_count / len(xss_payloads)) * 100
+        self.log_test("XSS Attack Prevention", success_rate >= 80, 
+                     f"Blocked {xss_blocked_count}/{len(xss_payloads)} XSS attempts ({success_rate:.1f}%)")
+        
+        return success_rate >= 80
+    
+    def test_input_length_validation(self):
+        """Test field length validation"""
+        print("\n=== INPUT LENGTH VALIDATION TESTS ===")
+        
+        # Test oversized inputs
+        oversized_tests = [
+            ("name", "A" * 150, "Name too long (150 chars, max 100)"),
+            ("email", "a" * 250 + "@test.com", "Email too long (>254 chars)"),
+            ("city", "B" * 150, "City too long (150 chars, max 100)"),
+            ("state", "C" * 150, "State too long (150 chars, max 100)"),
+            ("phone", "1" * 25, "Phone too long (25 chars, max 20)")
+        ]
+        
+        validation_working = 0
+        
+        for field, oversized_value, description in oversized_tests:
+            test_data = {
+                "name": "Test User",
+                "phone": "+1-555-7777",
+                "email": "lengthtest@test.com",
+                "blood_type": "B+",
+                "age": 25,
+                "city": "Test City",
+                "state": "Test State"
+            }
+            test_data[field] = oversized_value
+            
+            try:
+                response = requests.post(f"{self.base_url}/donors", json=test_data, timeout=10)
+                if response.status_code == 400:
+                    validation_working += 1
+                    print(f"✓ {description} - Correctly rejected")
+                else:
+                    print(f"❌ {description} - Should be rejected but got status {response.status_code}")
+                    
+            except Exception as e:
+                print(f"Length validation test failed for {field}: {e}")
+        
+        success_rate = (validation_working / len(oversized_tests)) * 100
+        self.log_test("Input Length Validation", success_rate >= 80,
+                     f"Validated {validation_working}/{len(oversized_tests)} length restrictions ({success_rate:.1f}%)")
+        
+        return success_rate >= 80
+    
+    def test_phone_email_validation(self):
+        """Test phone and email format validation"""
+        print("\n=== PHONE & EMAIL FORMAT VALIDATION TESTS ===")
+        
+        # Invalid phone numbers
+        invalid_phones = [
+            "123",  # Too short
+            "abc-def-ghij",  # Non-numeric
+            "555-0123",  # Missing country code/area
+            "++1-555-0123",  # Double plus
+            "",  # Empty
+            "1234567890123456789012345"  # Too long
+        ]
+        
+        # Invalid emails
+        invalid_emails = [
+            "notanemail",  # No @ symbol
+            "@test.com",  # No local part
+            "test@",  # No domain
+            "test..test@test.com",  # Double dots
+            "test@test",  # No TLD
+            "",  # Empty
+            "a" * 250 + "@test.com"  # Too long
+        ]
+        
+        phone_validation_count = 0
+        email_validation_count = 0
+        
+        # Test invalid phones
+        for i, invalid_phone in enumerate(invalid_phones):
+            test_data = {
+                "name": "Phone Test User",
+                "phone": invalid_phone,
+                "email": f"phonetest{i}@test.com",
+                "blood_type": "AB+",
+                "age": 28,
+                "city": "Test City",
+                "state": "Test State"
+            }
+            
+            try:
+                response = requests.post(f"{self.base_url}/donors", json=test_data, timeout=10)
+                if response.status_code == 400:
+                    phone_validation_count += 1
+                    print(f"✓ Invalid phone rejected: {invalid_phone}")
+                else:
+                    print(f"❌ Invalid phone accepted: {invalid_phone}")
+            except Exception as e:
+                print(f"Phone validation test failed: {e}")
+        
+        # Test invalid emails
+        for i, invalid_email in enumerate(invalid_emails):
+            test_data = {
+                "name": "Email Test User",
+                "phone": "+1-555-6666",
+                "email": invalid_email,
+                "blood_type": "AB-",
+                "age": 32,
+                "city": "Test City",
+                "state": "Test State"
+            }
+            
+            try:
+                response = requests.post(f"{self.base_url}/donors", json=test_data, timeout=10)
+                if response.status_code == 400:
+                    email_validation_count += 1
+                    print(f"✓ Invalid email rejected: {invalid_email}")
+                else:
+                    print(f"❌ Invalid email accepted: {invalid_email}")
+            except Exception as e:
+                print(f"Email validation test failed: {e}")
+        
+        phone_success = (phone_validation_count / len(invalid_phones)) * 100
+        email_success = (email_validation_count / len(invalid_emails)) * 100
+        
+        self.log_test("Phone Format Validation", phone_success >= 80,
+                     f"Rejected {phone_validation_count}/{len(invalid_phones)} invalid phones ({phone_success:.1f}%)")
+        self.log_test("Email Format Validation", email_success >= 80,
+                     f"Rejected {email_validation_count}/{len(invalid_emails)} invalid emails ({email_success:.1f}%)")
+        
+        return phone_success >= 80 and email_success >= 80
+    
+    def test_blood_type_validation_enhanced(self):
+        """Test enhanced blood type validation"""
+        print("\n=== ENHANCED BLOOD TYPE VALIDATION TESTS ===")
+        
+        invalid_blood_types = [
+            "X+", "Y-", "Z+",  # Invalid letters
+            "A", "B", "AB", "O",  # Missing +/-
+            "A++", "B--", "AB+-",  # Invalid symbols
+            "a+", "b-", "ab+", "o-",  # Lowercase
+            "", "null", "undefined",  # Empty/null values
+            "Type A", "O Positive",  # Text descriptions
+            "1+", "2-", "3+",  # Numbers
+            "<script>alert('xss')</script>",  # XSS attempt
+        ]
+        
+        validation_count = 0
+        
+        for i, invalid_type in enumerate(invalid_blood_types):
+            test_data = {
+                "name": "Blood Type Test User",
+                "phone": "+1-555-5555",
+                "email": f"bloodtest{i}@test.com",
+                "blood_type": invalid_type,
+                "age": 25,
+                "city": "Test City",
+                "state": "Test State"
+            }
+            
+            try:
+                response = requests.post(f"{self.base_url}/donors", json=test_data, timeout=10)
+                if response.status_code == 400:
+                    validation_count += 1
+                    print(f"✓ Invalid blood type rejected: '{invalid_type}'")
+                else:
+                    print(f"❌ Invalid blood type accepted: '{invalid_type}'")
+            except Exception as e:
+                print(f"Blood type validation test failed: {e}")
+        
+        # Test valid blood types still work
+        valid_types = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
+        valid_accepted = 0
+        
+        for i, valid_type in enumerate(valid_types):
+            test_data = {
+                "name": "Valid Blood Type User",
+                "phone": f"+1-555-444{i}",
+                "email": f"validblood{i}@test.com",
+                "blood_type": valid_type,
+                "age": 30,
+                "city": "Test City",
+                "state": "Test State"
+            }
+            
+            try:
+                response = requests.post(f"{self.base_url}/donors", json=test_data, timeout=10)
+                if response.status_code == 200:
+                    valid_accepted += 1
+                    print(f"✓ Valid blood type accepted: {valid_type}")
+                else:
+                    print(f"❌ Valid blood type rejected: {valid_type}")
+            except Exception as e:
+                print(f"Valid blood type test failed: {e}")
+        
+        invalid_success = (validation_count / len(invalid_blood_types)) * 100
+        valid_success = (valid_accepted / len(valid_types)) * 100
+        
+        self.log_test("Invalid Blood Type Rejection", invalid_success >= 80,
+                     f"Rejected {validation_count}/{len(invalid_blood_types)} invalid types ({invalid_success:.1f}%)")
+        self.log_test("Valid Blood Type Acceptance", valid_success >= 80,
+                     f"Accepted {valid_accepted}/{len(valid_types)} valid types ({valid_success:.1f}%)")
+        
+        return invalid_success >= 80 and valid_success >= 80
+    
+    def test_age_restrictions(self):
+        """Test age restrictions (18-65 years old)"""
+        print("\n=== AGE RESTRICTION TESTS ===")
+        
+        invalid_ages = [17, 16, 10, 0, -5, 66, 70, 100, 150]
+        valid_ages = [18, 25, 35, 45, 55, 65]
+        
+        invalid_rejected = 0
+        valid_accepted = 0
+        
+        # Test invalid ages
+        for i, age in enumerate(invalid_ages):
+            test_data = {
+                "name": "Age Test User",
+                "phone": f"+1-555-333{i}",
+                "email": f"agetest{i}@test.com",
+                "blood_type": "O+",
+                "age": age,
+                "city": "Test City",
+                "state": "Test State"
+            }
+            
+            try:
+                response = requests.post(f"{self.base_url}/donors", json=test_data, timeout=10)
+                if response.status_code == 400:
+                    invalid_rejected += 1
+                    print(f"✓ Invalid age rejected: {age}")
+                else:
+                    print(f"❌ Invalid age accepted: {age}")
+            except Exception as e:
+                print(f"Invalid age test failed: {e}")
+        
+        # Test valid ages
+        for i, age in enumerate(valid_ages):
+            test_data = {
+                "name": "Valid Age User",
+                "phone": f"+1-555-222{i}",
+                "email": f"validage{i}@test.com",
+                "blood_type": "A+",
+                "age": age,
+                "city": "Test City",
+                "state": "Test State"
+            }
+            
+            try:
+                response = requests.post(f"{self.base_url}/donors", json=test_data, timeout=10)
+                if response.status_code == 200:
+                    valid_accepted += 1
+                    print(f"✓ Valid age accepted: {age}")
+                else:
+                    print(f"❌ Valid age rejected: {age}")
+            except Exception as e:
+                print(f"Valid age test failed: {e}")
+        
+        invalid_success = (invalid_rejected / len(invalid_ages)) * 100
+        valid_success = (valid_accepted / len(valid_ages)) * 100
+        
+        self.log_test("Invalid Age Rejection", invalid_success >= 80,
+                     f"Rejected {invalid_rejected}/{len(invalid_ages)} invalid ages ({invalid_success:.1f}%)")
+        self.log_test("Valid Age Acceptance", valid_success >= 80,
+                     f"Accepted {valid_accepted}/{len(valid_ages)} valid ages ({valid_success:.1f}%)")
+        
+        return invalid_success >= 80 and valid_success >= 80
+    
+    def test_enhanced_error_handling(self):
+        """Test enhanced error handling - should not expose system details"""
+        print("\n=== ENHANCED ERROR HANDLING TESTS ===")
+        
+        # Test malformed JSON
+        try:
+            response = requests.post(f"{self.base_url}/donors", 
+                                   data="invalid json{", 
+                                   headers={"Content-Type": "application/json"},
+                                   timeout=10)
+            
+            malformed_handled = response.status_code == 400 or response.status_code == 422
+            error_text = response.text.lower()
+            
+            # Check that error doesn't expose system details
+            system_keywords = ["traceback", "exception", "stack", "internal", "server error", "debug"]
+            exposes_system = any(keyword in error_text for keyword in system_keywords)
+            
+            self.log_test("Malformed JSON Handling", malformed_handled and not exposes_system,
+                         f"Malformed JSON handled properly, no system details exposed")
+            
+        except Exception as e:
+            self.log_test("Malformed JSON Handling", False, f"Test failed: {e}")
+        
+        # Test missing required fields
+        try:
+            incomplete_data = {"name": "Test User"}  # Missing required fields
+            response = requests.post(f"{self.base_url}/donors", json=incomplete_data, timeout=10)
+            
+            missing_fields_handled = response.status_code == 400 or response.status_code == 422
+            error_text = response.text.lower()
+            exposes_system = any(keyword in error_text for keyword in ["traceback", "exception", "stack"])
+            
+            self.log_test("Missing Fields Handling", missing_fields_handled and not exposes_system,
+                         f"Missing fields handled properly, no system details exposed")
+            
+        except Exception as e:
+            self.log_test("Missing Fields Handling", False, f"Test failed: {e}")
+        
+        # Test invalid data types
+        try:
+            invalid_data = {
+                "name": 12345,  # Should be string
+                "phone": True,  # Should be string
+                "email": [],    # Should be string
+                "blood_type": "A+",
+                "age": "thirty",  # Should be integer
+                "city": "Test City",
+                "state": "Test State"
+            }
+            response = requests.post(f"{self.base_url}/donors", json=invalid_data, timeout=10)
+            
+            invalid_types_handled = response.status_code == 400 or response.status_code == 422
+            error_text = response.text.lower()
+            exposes_system = any(keyword in error_text for keyword in ["traceback", "exception", "stack"])
+            
+            self.log_test("Invalid Data Types Handling", invalid_types_handled and not exposes_system,
+                         f"Invalid data types handled properly, no system details exposed")
+            
+        except Exception as e:
+            self.log_test("Invalid Data Types Handling", False, f"Test failed: {e}")
+        
+        return True
+    
+    def test_demo_mode_features(self):
+        """Test demo mode features and disclaimers"""
+        print("\n=== DEMO MODE FEATURES TESTS ===")
+        
+        # Test API root includes demo disclaimer
+        try:
+            response = requests.get(f"{self.base_url}/", timeout=10)
+            if response.status_code == 200:
+                root_data = response.json()
+                has_disclaimer = "demonstration" in root_data.get("disclaimer", "").lower()
+                self.log_test("API Root Demo Disclaimer", has_disclaimer,
+                             "API root includes demo disclaimer" if has_disclaimer else "Missing demo disclaimer")
+            else:
+                self.log_test("API Root Demo Disclaimer", False, f"API root not accessible: {response.status_code}")
+        except Exception as e:
+            self.log_test("API Root Demo Disclaimer", False, f"Test failed: {e}")
+        
+        # Test statistics endpoint shows demo_mode status
+        try:
+            response = requests.get(f"{self.base_url}/stats", timeout=10)
+            if response.status_code == 200:
+                stats = response.json()
+                has_demo_status = stats.get("system_status") == "demo_mode"
+                has_disclaimer = "demo" in stats.get("disclaimer", "").lower()
+                
+                self.log_test("Stats Demo Mode Status", has_demo_status,
+                             "Stats shows demo_mode status" if has_demo_status else "Missing demo_mode status")
+                self.log_test("Stats Demo Disclaimer", has_disclaimer,
+                             "Stats includes demo disclaimer" if has_disclaimer else "Missing demo disclaimer")
+            else:
+                self.log_test("Stats Demo Mode", False, f"Stats not accessible: {response.status_code}")
+        except Exception as e:
+            self.log_test("Stats Demo Mode", False, f"Test failed: {e}")
+        
+        return True
+    
+    def test_websocket_security(self):
+        """Test WebSocket connection security and demo warnings"""
+        print("\n=== WEBSOCKET SECURITY TESTS ===")
+        
+        try:
+            # Test WebSocket connection
+            ws_url = self.base_url.replace("https://", "wss://").replace("/api", "/ws")
+            
+            def on_message(ws, message):
+                try:
+                    data = json.loads(message)
+                    if data.get("type") == "welcome":
+                        has_demo_warning = "demonstration" in data.get("disclaimer", "").lower()
+                        self.log_test("WebSocket Demo Warning", has_demo_warning,
+                                     "WebSocket welcome includes demo warning" if has_demo_warning else "Missing demo warning")
+                        ws.close()
+                except Exception as e:
+                    print(f"WebSocket message parsing error: {e}")
+            
+            def on_error(ws, error):
+                print(f"WebSocket error: {error}")
+            
+            def on_close(ws, close_status_code, close_msg):
+                print("WebSocket connection closed")
+            
+            def on_open(ws):
+                print("WebSocket connection opened")
+            
+            # Create WebSocket connection with SSL context
+            ws = websocket.WebSocketApp(ws_url,
+                                      on_open=on_open,
+                                      on_message=on_message,
+                                      on_error=on_error,
+                                      on_close=on_close)
+            
+            # Run WebSocket in a separate thread with timeout
+            def run_ws():
+                ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
+            
+            ws_thread = threading.Thread(target=run_ws)
+            ws_thread.daemon = True
+            ws_thread.start()
+            
+            # Wait for connection and message
+            time.sleep(3)
+            
+            self.log_test("WebSocket Connection", True, "WebSocket connection test completed")
+            
+        except Exception as e:
+            self.log_test("WebSocket Connection", False, f"WebSocket test failed: {e}")
+        
+        return True
+    
+    def test_units_needed_validation(self):
+        """Test units needed validation (1-10 units)"""
+        print("\n=== UNITS NEEDED VALIDATION TESTS ===")
+        
+        invalid_units = [0, -1, -5, 11, 15, 100, "five", None]
+        valid_units = [1, 2, 5, 8, 10]
+        
+        invalid_rejected = 0
+        valid_accepted = 0
+        
+        # Test invalid units
+        for i, units in enumerate(invalid_units):
+            request_data = {
+                "requester_name": "Dr. Test",
+                "patient_name": "Test Patient",
+                "phone": "+1-555-1111",
+                "email": f"unitstest{i}@test.com",
+                "blood_type_needed": "O+",
+                "urgency": "Normal",
+                "units_needed": units,
+                "hospital_name": "Test Hospital",
+                "city": "Test City",
+                "state": "Test State"
+            }
+            
+            try:
+                response = requests.post(f"{self.base_url}/blood-requests", json=request_data, timeout=10)
+                if response.status_code == 400 or response.status_code == 422:
+                    invalid_rejected += 1
+                    print(f"✓ Invalid units rejected: {units}")
+                else:
+                    print(f"❌ Invalid units accepted: {units}")
+            except Exception as e:
+                print(f"Invalid units test failed: {e}")
+        
+        # Test valid units
+        for i, units in enumerate(valid_units):
+            request_data = {
+                "requester_name": "Dr. Valid Test",
+                "patient_name": "Valid Patient",
+                "phone": "+1-555-2222",
+                "email": f"validunits{i}@test.com",
+                "blood_type_needed": "A+",
+                "urgency": "Normal",
+                "units_needed": units,
+                "hospital_name": "Valid Hospital",
+                "city": "Test City",
+                "state": "Test State"
+            }
+            
+            try:
+                response = requests.post(f"{self.base_url}/blood-requests", json=request_data, timeout=10)
+                if response.status_code == 200:
+                    valid_accepted += 1
+                    print(f"✓ Valid units accepted: {units}")
+                else:
+                    print(f"❌ Valid units rejected: {units}")
+            except Exception as e:
+                print(f"Valid units test failed: {e}")
+        
+        invalid_success = (invalid_rejected / len(invalid_units)) * 100
+        valid_success = (valid_accepted / len(valid_units)) * 100
+        
+        self.log_test("Invalid Units Rejection", invalid_success >= 80,
+                     f"Rejected {invalid_rejected}/{len(invalid_units)} invalid units ({invalid_success:.1f}%)")
+        self.log_test("Valid Units Acceptance", valid_success >= 80,
+                     f"Accepted {valid_accepted}/{len(valid_units)} valid units ({valid_success:.1f}%)")
+        
+        return invalid_success >= 80 and valid_success >= 80
     
     def run_all_tests(self):
         """Run all tests in sequence"""

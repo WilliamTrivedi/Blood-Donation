@@ -27,7 +27,7 @@ import secrets
 from auth import (
     UserRole, get_current_user, get_current_user_optional, require_role, require_roles,
     create_access_token, create_refresh_token, verify_password, get_password_hash,
-    validate_password, Token, UserLogin, create_demo_token
+    validate_password, Token, UserLogin, create_demo_token, User
 )
 from models import (
     Donor, DonorCreate, BloodRequest, BloodRequestCreate, Hospital, HospitalCreate,

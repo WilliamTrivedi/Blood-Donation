@@ -164,7 +164,7 @@ def require_roles(required_roles: list[UserRole]):
     return role_checker
 
 # Optional authentication (allows both authenticated and guest users)
-async def get_current_user_optional(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Optional[User]:
+async def get_current_user_optional(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Optional[User]:
     if not credentials:
         return None
     

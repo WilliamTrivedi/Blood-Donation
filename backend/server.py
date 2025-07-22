@@ -503,10 +503,10 @@ async def root(request: Request):
         "features": ["Real-time alerts", "User authentication", "Hospital verification", "Role-based access"]
     }
 
-# Donor routes
+# Donor routes (enhanced with optional authentication)
 @api_router.post("/donors", response_model=Donor)
 @limiter.limit("5/minute")
-async def register_donor(request: Request, donor_data: DonorCreate):
+async def register_donor(request: Request, donor_data: DonorCreate, current_user: User = Depends(get_current_user_optional)):
     try:
         # Check if donor already exists
         existing_donor = await db.donors.find_one({"email": donor_data.email})
@@ -514,6 +514,16 @@ async def register_donor(request: Request, donor_data: DonorCreate):
             raise HTTPException(status_code=400, detail="Donor with this email already exists")
         
         donor = Donor(**donor_data.dict())
+        
+        # Link to user account if authenticated
+        if current_user and current_user.role in [UserRole.DONOR, UserRole.ADMIN]:
+            donor.user_id = current_user.id
+            # Update user account to link to donor
+            await db.users.update_one(
+                {"id": current_user.id},
+                {"$set": {"donor_id": donor.id}}
+            )
+        
         await db.donors.insert_one(donor.dict())
         
         # Broadcast new donor registration
@@ -535,7 +545,7 @@ async def register_donor(request: Request, donor_data: DonorCreate):
 
 @api_router.get("/donors", response_model=List[Donor])
 @limiter.limit("20/minute")
-async def get_donors(request: Request):
+async def get_donors(request: Request, current_user: User = Depends(get_current_user_optional)):
     try:
         donors = await db.donors.find({"is_available": True}).to_list(1000)
         return [Donor(**donor) for donor in donors]
@@ -544,8 +554,9 @@ async def get_donors(request: Request):
 
 @api_router.get("/donors/{donor_id}", response_model=Donor)
 @limiter.limit("30/minute")
-async def get_donor(request: Request, donor_id: str):
+async def get_donor(request: Request, donor_id: str, current_user: User = Depends(get_current_user_optional)):
     try:
+        from models import sanitize_input
         donor_id = sanitize_input(donor_id)
         donor = await db.donors.find_one({"id": donor_id})
         if not donor:
@@ -554,6 +565,36 @@ async def get_donor(request: Request, donor_id: str):
     except Exception as e:
         if isinstance(e, HTTPException):
             raise
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@api_router.put("/donors/{donor_id}")
+@limiter.limit("10/minute")
+async def update_donor(request: Request, donor_id: str, donor_data: DonorCreate, current_user: User = Depends(require_roles([UserRole.DONOR, UserRole.ADMIN]))):
+    """Update donor information (donor or admin only)"""
+    try:
+        from models import sanitize_input
+        donor_id = sanitize_input(donor_id)
+        
+        # Check if user owns this donor record or is admin
+        if current_user.role == UserRole.DONOR and current_user.donor_id != donor_id:
+            raise HTTPException(status_code=403, detail="Access denied. You can only update your own donor profile.")
+        
+        updated_data = donor_data.dict()
+        updated_data["updated_at"] = datetime.utcnow()
+        
+        result = await db.donors.update_one(
+            {"id": donor_id},
+            {"$set": updated_data}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Donor not found")
+        
+        return {"message": "Donor information updated successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")
 
 # Blood Request routes

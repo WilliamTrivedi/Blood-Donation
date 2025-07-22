@@ -17,6 +17,48 @@ function App() {
   const [stats, setStats] = useState(null);
   const [matchedDonors, setMatchedDonors] = useState(null);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
+  const [formErrors, setFormErrors] = useState({});
+
+  // Form validation functions
+  const validatePhone = (phone) => {
+    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    const cleanPhone = phone.replace(/[^\d\+]/g, '');
+    return phoneRegex.test(cleanPhone) && cleanPhone.length >= 10;
+  };
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email) && email.length <= 254;
+  };
+
+  const validateRequired = (value, fieldName) => {
+    if (!value || value.toString().trim().length === 0) {
+      return `${fieldName} is required`;
+    }
+    return null;
+  };
+
+  const validateAge = (age) => {
+    const ageNum = parseInt(age);
+    if (isNaN(ageNum) || ageNum < 18 || ageNum > 65) {
+      return "Age must be between 18 and 65";
+    }
+    return null;
+  };
+
+  const validateUnits = (units) => {
+    const unitsNum = parseInt(units);
+    if (isNaN(unitsNum) || unitsNum < 1 || unitsNum > 10) {
+      return "Units must be between 1 and 10";
+    }
+    return null;
+  };
+
+  const sanitizeInput = (input) => {
+    if (typeof input !== 'string') return input;
+    return input.trim().slice(0, 500); // Basic length limiting
+  };
   
   // Real-time alerts
   const [alerts, setAlerts] = useState([]);

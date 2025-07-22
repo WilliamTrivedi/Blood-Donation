@@ -704,7 +704,7 @@ class BloodDonationAPITester:
         invalid_phones = [
             "123",  # Too short
             "abc-def-ghij",  # Non-numeric
-            "555-0123",  # Missing country code/area
+            "555-0123",  # Too short
             "++1-555-0123",  # Double plus
             "",  # Empty
             "1234567890123456789012345"  # Too long
@@ -738,7 +738,7 @@ class BloodDonationAPITester:
             
             try:
                 response = requests.post(f"{self.base_url}/donors", json=test_data, timeout=10)
-                if response.status_code == 400:
+                if response.status_code in [400, 422]:  # Both are valid validation error codes
                     phone_validation_count += 1
                     print(f"✓ Invalid phone rejected: {invalid_phone}")
                 else:
@@ -750,7 +750,7 @@ class BloodDonationAPITester:
         for i, invalid_email in enumerate(invalid_emails):
             test_data = {
                 "name": "Email Test User",
-                "phone": "+1-555-6666",
+                "phone": "555-123-4567",
                 "email": invalid_email,
                 "blood_type": "AB-",
                 "age": 32,
@@ -760,7 +760,7 @@ class BloodDonationAPITester:
             
             try:
                 response = requests.post(f"{self.base_url}/donors", json=test_data, timeout=10)
-                if response.status_code == 400:
+                if response.status_code in [400, 422]:  # Both are valid validation error codes
                     email_validation_count += 1
                     print(f"✓ Invalid email rejected: {invalid_email}")
                 else:

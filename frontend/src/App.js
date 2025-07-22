@@ -1273,6 +1273,28 @@ function BloodConnectApp() {
               >
                 View Donors
               </button>
+              
+              {/* Authentication Section */}
+              {isAuthenticated ? (
+                <div className="flex items-center space-x-2 border-l pl-4 ml-4">
+                  <span className="text-sm text-gray-600">
+                    {isDemo ? `Demo ${user?.role}` : user?.email}
+                  </span>
+                  <button
+                    onClick={logout}
+                    className="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowLoginModal(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  🔐 Login/Register
+                </button>
+              )}
             </div>
           </div>
         </div>

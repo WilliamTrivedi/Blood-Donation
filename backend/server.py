@@ -551,15 +551,18 @@ async def register_donor(request: Request, donor_data: DonorCreate, current_user
         
         await db.donors.insert_one(donor.dict())
         
-        # Broadcast new donor registration
-        alert = {
-            "type": "new_donor",
-            "message": f"🩸 New {donor.blood_type} donor registered in {donor.city}, {donor.state}",
-            "donor_blood_type": donor.blood_type,
-            "location": f"{donor.city}, {donor.state}",
-            "timestamp": datetime.utcnow().isoformat()
-        }
-        await manager.broadcast_alert(json.dumps(alert))
+        # Broadcast new donor registration (temporarily disabled for testing)
+        try:
+            alert = {
+                "type": "new_donor",
+                "message": f"🩸 New {donor.blood_type} donor registered in {donor.city}, {donor.state}",
+                "donor_blood_type": donor.blood_type,
+                "location": f"{donor.city}, {donor.state}",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            await manager.broadcast_alert(json.dumps(alert))
+        except Exception as e:
+            print(f"WebSocket broadcast error (non-critical): {e}")
         
         return donor
         

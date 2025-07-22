@@ -257,7 +257,7 @@ async def websocket_endpoint(websocket: WebSocket):
         # Send welcome message with disclaimer
         welcome_msg = {
             "type": "welcome",
-            "message": "Connected to BloodConnect Emergency Alerts - FOR DEMONSTRATION PURPOSES ONLY",
+            "message": "Connected to BloodConnect Emergency Alerts v2.0 - FOR DEMONSTRATION PURPOSES ONLY",
             "disclaimer": "This system is for demonstration only. Not for actual medical emergencies.",
             "timestamp": datetime.utcnow().isoformat()
         }
@@ -271,6 +271,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 
                 # Handle donor registration for targeted alerts
                 if message.get("type") == "register_donor":
+                    from models import sanitize_input
                     donor_id = sanitize_input(message.get("donor_id", ""))
                     if donor_id and len(donor_id) > 0:
                         manager.donor_connections[donor_id] = websocket
@@ -281,7 +282,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         )
                         response = {
                             "type": "registration_success",
-                            "message": f"Registered for emergency alerts - DEMO MODE",
+                            "message": f"Registered for emergency alerts - DEMO MODE v2.0",
                             "donor_id": donor_id
                         }
                         await manager.send_personal_message(json.dumps(response), websocket)

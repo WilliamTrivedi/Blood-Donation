@@ -60,7 +60,7 @@ class BloodDonationAPITester:
         """Test valid donor registration"""
         donor_data = {
             "name": "Sarah Johnson",
-            "phone": "+1-555-012-3456",  # Fixed: proper 10-digit phone
+            "phone": "+1-555-012-3456",  # Fixed: proper 11-digit phone
             "email": "sarah.johnson@email.com",
             "blood_type": "O-",
             "age": 28,

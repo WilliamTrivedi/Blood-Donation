@@ -1221,6 +1221,13 @@ function BloodConnectApp() {
               </div>
               <h1 className="text-xl font-bold text-gray-900">BloodConnect</h1>
               <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">DEMO</span>
+              {isAuthenticated && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                    {isDemo ? `👤 Demo ${user?.role}` : `✓ ${user?.role}`}
+                  </span>
+                </div>
+              )}
               <div className="flex items-center space-x-2">
                 {isConnected ? (
                   <div className="flex items-center space-x-1">
@@ -1235,7 +1242,7 @@ function BloodConnectApp() {
                 )}
               </div>
             </div>
-            <div className="flex space-x-4">
+            <div className="flex space-x-4 items-center">
               <button
                 onClick={() => setActiveTab("home")}
                 className={`px-4 py-2 rounded-md ${activeTab === "home" ? "bg-red-600 text-white" : "text-gray-600 hover:text-red-600"}`}

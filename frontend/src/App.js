@@ -509,6 +509,12 @@ function App() {
     return "bg-blue-50 border-blue-200";
   };
 
+  const renderFormError = (fieldName) => {
+    return formErrors[fieldName] ? (
+      <p className="text-red-600 text-sm mt-1">{formErrors[fieldName]}</p>
+    ) : null;
+  };
+
   const renderHome = () => (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50">
       {/* Real-time Alert Banner */}

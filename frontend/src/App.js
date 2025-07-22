@@ -699,24 +699,33 @@ function App() {
         <form onSubmit={handleDonorSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Full Name</label>
+              <label className="block text-sm font-medium text-gray-700">Full Name *</label>
               <input
                 type="text"
                 value={donorForm.name}
                 onChange={(e) => setDonorForm({...donorForm, name: e.target.value})}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 border p-2"
+                className={`mt-1 block w-full rounded-md shadow-sm focus:ring-red-500 border p-2 ${
+                  formErrors.name ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-red-500'
+                }`}
                 required
+                maxLength="100"
               />
+              {renderFormError('name')}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Phone</label>
+              <label className="block text-sm font-medium text-gray-700">Phone *</label>
               <input
                 type="tel"
                 value={donorForm.phone}
                 onChange={(e) => setDonorForm({...donorForm, phone: e.target.value})}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 border p-2"
+                className={`mt-1 block w-full rounded-md shadow-sm focus:ring-red-500 border p-2 ${
+                  formErrors.phone ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-red-500'
+                }`}
                 required
+                placeholder="+1-555-123-4567"
+                maxLength="20"
               />
+              {renderFormError('phone')}
             </div>
           </div>
           <div>

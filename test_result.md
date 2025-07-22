@@ -210,9 +210,6 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Blood Donation API with Donor Registration"
-    - "Blood Request System"
-    - "Smart Donor Matching Algorithm"
     - "Blood Request Management Interface"
   stuck_tasks: []
   test_all: false

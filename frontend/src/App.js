@@ -1337,6 +1337,8 @@ function BloodConnectApp() {
       {activeTab === "request-blood" && renderBloodRequest()}
       {activeTab === "requests" && renderBloodRequests()}
       {activeTab === "donors" && renderDonors()}
+      {activeTab === "admin" && <AdminDashboard user={user} />}
+      {activeTab === "hospital" && <HospitalDashboard user={user} />}
     </div>
   );
 }

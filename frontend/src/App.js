@@ -829,8 +829,14 @@ function App() {
             type="submit"
             className="w-full bg-red-600 text-white py-3 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 font-semibold"
           >
-            🚨 Register for Emergency Alerts
+            🚨 Register for Demo Alerts
           </button>
+          
+          <div className="text-center mt-3">
+            <p className="text-xs text-gray-500">
+              * Required fields | All fields limited to prevent spam
+            </p>
+          </div>
         </form>
       </div>
     </div>

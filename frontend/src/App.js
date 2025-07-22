@@ -683,10 +683,15 @@ function App() {
           <p className="text-gray-600 mt-2">
             Get instant notifications when your blood type is urgently needed
           </p>
+          <div className="bg-red-50 border border-red-200 rounded-md p-3 mt-3">
+            <p className="text-red-700 text-sm font-medium">
+              ⚠️ DEMO MODE: This registration is for demonstration purposes only
+            </p>
+          </div>
           <div className="flex items-center justify-center mt-3 space-x-2">
             <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
             <span className="text-sm text-gray-600">
-              {isConnected ? 'Real-time alerts active' : 'Connecting to alert system...'}
+              {isConnected ? 'Real-time alerts active (DEMO)' : 'Connecting to alert system...'}
             </span>
           </div>
         </div>

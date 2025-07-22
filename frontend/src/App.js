@@ -307,11 +307,57 @@ function App() {
 
   const handleDonorSubmit = async (e) => {
     e.preventDefault();
+    
+    // Clear previous errors
+    setFormErrors({});
+    const errors = {};
+    
+    // Validate all fields
+    const nameError = validateRequired(donorForm.name, "Name");
+    if (nameError) errors.name = nameError;
+    
+    if (!validatePhone(donorForm.phone)) {
+      errors.phone = "Please enter a valid phone number (10+ digits)";
+    }
+    
+    if (!validateEmail(donorForm.email)) {
+      errors.email = "Please enter a valid email address";
+    }
+    
+    if (!donorForm.blood_type) {
+      errors.blood_type = "Please select your blood type";
+    }
+    
+    const ageError = validateAge(donorForm.age);
+    if (ageError) errors.age = ageError;
+    
+    const cityError = validateRequired(donorForm.city, "City");
+    if (cityError) errors.city = cityError;
+    
+    const stateError = validateRequired(donorForm.state, "State");
+    if (stateError) errors.state = stateError;
+    
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    
     try {
-      const response = await axios.post(`${API}/donors`, donorForm);
+      // Sanitize inputs
+      const sanitizedForm = {
+        ...donorForm,
+        name: sanitizeInput(donorForm.name),
+        phone: sanitizeInput(donorForm.phone),
+        email: sanitizeInput(donorForm.email.toLowerCase()),
+        city: sanitizeInput(donorForm.city),
+        state: sanitizeInput(donorForm.state),
+        age: parseInt(donorForm.age)
+      };
+      
+      const response = await axios.post(`${API}/donors`, sanitizedForm);
       const donor = response.data;
       
-      alert("Donor registered successfully! You can now receive emergency blood alerts.");
+      alert("✅ DEMO REGISTRATION SUCCESSFUL!\n\n⚠️ REMINDER: This is a demonstration system only.\n🚨 For real medical emergencies, call 911 immediately!");
       
       // Register for real-time alerts
       registerDonorForAlerts(donor.id);
@@ -327,7 +373,8 @@ function App() {
       });
       fetchStats();
     } catch (error) {
-      alert(error.response?.data?.detail || "Error registering donor");
+      const errorMessage = error.response?.data?.detail || "Error registering donor. Please check your information and try again.";
+      alert(`❌ Registration Failed:\n\n${errorMessage}\n\n⚠️ Remember: This is a demo system only.`);
     }
   };
 

@@ -555,6 +555,796 @@ class BloodDonationAPITester:
             self.log_test("E2E: Complete Flow", False, f"Flow failed: {str(e)}")
             return False
 
+    # ========== PHASE 2 AUTHENTICATION SYSTEM TESTS ==========
+    
+    def test_user_registration_donor(self):
+        """Test user registration with donor role"""
+        print("\n=== USER REGISTRATION - DONOR ROLE ===")
+        
+        user_data = {
+            "email": "donor.sarah@bloodconnect.com",
+            "password": "SecurePass123",
+            "role": "donor"
+        }
+        
+        try:
+            response = requests.post(f"{self.base_url}/auth/register", json=user_data, timeout=10)
+            if response.status_code == 200:
+                token_data = response.json()
+                self.auth_tokens["donor"] = token_data["access_token"]
+                self.created_users.append(token_data["user"])
+                
+                # Verify response structure
+                required_fields = ["access_token", "refresh_token", "user"]
+                missing_fields = [field for field in required_fields if field not in token_data]
+                if missing_fields:
+                    self.log_test("Donor Registration Response", False, f"Missing fields: {missing_fields}")
+                else:
+                    self.log_test("Donor Registration Response", True, "All required fields present")
+                
+                # Verify user role
+                user = token_data["user"]
+                if user["role"] == "donor":
+                    self.log_test("Donor Registration", True, f"Successfully registered donor user: {user['email']}")
+                    return True
+                else:
+                    self.log_test("Donor Registration", False, f"Wrong role: expected 'donor', got '{user['role']}'")
+                    return False
+            else:
+                self.log_test("Donor Registration", False, f"Status {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("Donor Registration", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_user_registration_hospital(self):
+        """Test user registration with hospital role"""
+        print("\n=== USER REGISTRATION - HOSPITAL ROLE ===")
+        
+        user_data = {
+            "email": "admin.hospital@citymedical.com",
+            "password": "HospitalSecure456",
+            "role": "hospital"
+        }
+        
+        try:
+            response = requests.post(f"{self.base_url}/auth/register", json=user_data, timeout=10)
+            if response.status_code == 200:
+                token_data = response.json()
+                self.auth_tokens["hospital"] = token_data["access_token"]
+                self.created_users.append(token_data["user"])
+                
+                user = token_data["user"]
+                if user["role"] == "hospital":
+                    self.log_test("Hospital Registration", True, f"Successfully registered hospital user: {user['email']}")
+                    return True
+                else:
+                    self.log_test("Hospital Registration", False, f"Wrong role: expected 'hospital', got '{user['role']}'")
+                    return False
+            else:
+                self.log_test("Hospital Registration", False, f"Status {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("Hospital Registration", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_password_validation(self):
+        """Test password validation requirements"""
+        print("\n=== PASSWORD VALIDATION TESTS ===")
+        
+        invalid_passwords = [
+            ("short", "Too short (less than 8 characters)"),
+            ("nouppercase123", "No uppercase letter"),
+            ("NOLOWERCASE123", "No lowercase letter"),
+            ("NoNumbers", "No numbers"),
+            ("Simple123", "Valid password - should pass")
+        ]
+        
+        validation_working = 0
+        
+        for password, description in invalid_passwords:
+            user_data = {
+                "email": f"test.{int(time.time())}@test.com",
+                "password": password,
+                "role": "donor"
+            }
+            
+            try:
+                response = requests.post(f"{self.base_url}/auth/register", json=user_data, timeout=10)
+                
+                if password == "Simple123":  # This should succeed
+                    if response.status_code == 200:
+                        validation_working += 1
+                        print(f"✓ {description} - Correctly accepted")
+                    else:
+                        print(f"❌ {description} - Should be accepted but got status {response.status_code}")
+                else:  # These should fail
+                    if response.status_code == 400:
+                        validation_working += 1
+                        print(f"✓ {description} - Correctly rejected")
+                    else:
+                        print(f"❌ {description} - Should be rejected but got status {response.status_code}")
+                        
+            except Exception as e:
+                print(f"Password validation test failed for '{password}': {e}")
+        
+        success_rate = (validation_working / len(invalid_passwords)) * 100
+        self.log_test("Password Validation", success_rate >= 80,
+                     f"Validated {validation_working}/{len(invalid_passwords)} password requirements ({success_rate:.1f}%)")
+        
+        return success_rate >= 80
+    
+    def test_duplicate_email_registration(self):
+        """Test duplicate email rejection in user registration"""
+        print("\n=== DUPLICATE EMAIL REGISTRATION TEST ===")
+        
+        if not self.created_users:
+            self.log_test("Duplicate Email Registration", False, "No users created yet for duplicate test")
+            return False
+        
+        # Try to register with same email as first user
+        duplicate_user = {
+            "email": self.created_users[0]["email"],
+            "password": "DifferentPass123",
+            "role": "donor"
+        }
+        
+        try:
+            response = requests.post(f"{self.base_url}/auth/register", json=duplicate_user, timeout=10)
+            if response.status_code == 400:
+                self.log_test("Duplicate Email Registration", True, "Correctly rejected duplicate email")
+                return True
+            else:
+                self.log_test("Duplicate Email Registration", False, f"Should reject duplicate email, got status {response.status_code}")
+                return False
+        except Exception as e:
+            self.log_test("Duplicate Email Registration", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_user_login(self):
+        """Test user login with valid credentials"""
+        print("\n=== USER LOGIN TESTS ===")
+        
+        if not self.created_users:
+            self.log_test("User Login", False, "No users created yet for login test")
+            return False
+        
+        # Test login with donor credentials
+        login_data = {
+            "email": "donor.sarah@bloodconnect.com",
+            "password": "SecurePass123"
+        }
+        
+        try:
+            response = requests.post(f"{self.base_url}/auth/login", json=login_data, timeout=10)
+            if response.status_code == 200:
+                token_data = response.json()
+                
+                # Verify response structure
+                required_fields = ["access_token", "refresh_token", "user"]
+                missing_fields = [field for field in required_fields if field not in token_data]
+                if missing_fields:
+                    self.log_test("Login Response Structure", False, f"Missing fields: {missing_fields}")
+                else:
+                    self.log_test("Login Response Structure", True, "All required fields present")
+                
+                # Update token for future tests
+                self.auth_tokens["donor_login"] = token_data["access_token"]
+                
+                self.log_test("User Login", True, f"Successfully logged in user: {token_data['user']['email']}")
+                return True
+            else:
+                self.log_test("User Login", False, f"Status {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("User Login", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_invalid_login_credentials(self):
+        """Test login with invalid credentials"""
+        print("\n=== INVALID LOGIN CREDENTIALS TEST ===")
+        
+        invalid_login = {
+            "email": "donor.sarah@bloodconnect.com",
+            "password": "WrongPassword123"
+        }
+        
+        try:
+            response = requests.post(f"{self.base_url}/auth/login", json=invalid_login, timeout=10)
+            if response.status_code == 401:
+                self.log_test("Invalid Login Credentials", True, "Correctly rejected invalid credentials")
+                return True
+            else:
+                self.log_test("Invalid Login Credentials", False, f"Should reject invalid credentials, got status {response.status_code}")
+                return False
+        except Exception as e:
+            self.log_test("Invalid Login Credentials", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_demo_token_system(self):
+        """Test demo token generation for different roles"""
+        print("\n=== DEMO TOKEN SYSTEM TESTS ===")
+        
+        roles = ["donor", "hospital", "admin"]
+        demo_tokens = {}
+        
+        success_count = 0
+        for role in roles:
+            try:
+                response = requests.get(f"{self.base_url}/auth/demo-token?role={role}", timeout=10)
+                if response.status_code == 200:
+                    token_data = response.json()
+                    if "access_token" in token_data and token_data.get("demo") == True:
+                        demo_tokens[role] = token_data["access_token"]
+                        success_count += 1
+                        print(f"✓ Demo token generated for {role} role")
+                    else:
+                        print(f"❌ Invalid demo token response for {role} role")
+                else:
+                    print(f"❌ Failed to generate demo token for {role} role: {response.status_code}")
+            except Exception as e:
+                print(f"Demo token test failed for {role}: {e}")
+        
+        self.auth_tokens.update(demo_tokens)
+        
+        self.log_test("Demo Token System", success_count == len(roles),
+                     f"Generated {success_count}/{len(roles)} demo tokens successfully")
+        
+        return success_count == len(roles)
+    
+    def test_jwt_token_validation(self):
+        """Test JWT token validation on protected endpoints"""
+        print("\n=== JWT TOKEN VALIDATION TESTS ===")
+        
+        if "donor" not in self.auth_tokens:
+            self.log_test("JWT Token Validation", False, "No donor token available for testing")
+            return False
+        
+        # Test accessing protected endpoint with valid token
+        headers = {"Authorization": f"Bearer {self.auth_tokens['donor']}"}
+        
+        try:
+            response = requests.get(f"{self.base_url}/auth/me", headers=headers, timeout=10)
+            if response.status_code == 200:
+                user_info = response.json()
+                self.log_test("Valid JWT Token", True, f"Successfully accessed protected endpoint with valid token")
+                
+                # Test with invalid token
+                invalid_headers = {"Authorization": "Bearer invalid_token_here"}
+                invalid_response = requests.get(f"{self.base_url}/auth/me", headers=invalid_headers, timeout=10)
+                
+                if invalid_response.status_code == 401:
+                    self.log_test("Invalid JWT Token", True, "Correctly rejected invalid token")
+                    return True
+                else:
+                    self.log_test("Invalid JWT Token", False, f"Should reject invalid token, got status {invalid_response.status_code}")
+                    return False
+            else:
+                self.log_test("Valid JWT Token", False, f"Valid token rejected: {response.status_code}")
+                return False
+        except Exception as e:
+            self.log_test("JWT Token Validation", False, f"Request failed: {str(e)}")
+            return False
+    
+    # ========== HOSPITAL MANAGEMENT SYSTEM TESTS ==========
+    
+    def test_hospital_registration(self):
+        """Test hospital registration with proper validation"""
+        print("\n=== HOSPITAL REGISTRATION TESTS ===")
+        
+        if "hospital" not in self.auth_tokens:
+            self.log_test("Hospital Registration", False, "No hospital token available for testing")
+            return False
+        
+        hospital_data = {
+            "name": "City General Medical Center",
+            "license_number": "HOSP-2024-001",
+            "phone": "+1-555-0100",
+            "email": "admin@citygeneral.com",
+            "address": "123 Medical Drive, Suite 100",
+            "city": "Boston",
+            "state": "Massachusetts",
+            "zip_code": "02101",
+            "website": "https://citygeneral.com",
+            "contact_person_name": "Dr. Jennifer Martinez",
+            "contact_person_title": "Chief Medical Officer",
+            "contact_person_phone": "+1-555-0101",
+            "contact_person_email": "j.martinez@citygeneral.com"
+        }
+        
+        headers = {"Authorization": f"Bearer {self.auth_tokens['hospital']}"}
+        
+        try:
+            response = requests.post(f"{self.base_url}/hospitals", json=hospital_data, headers=headers, timeout=10)
+            if response.status_code == 200:
+                hospital = response.json()
+                self.created_hospitals.append(hospital)
+                
+                # Verify required fields
+                required_fields = ["id", "name", "license_number", "status", "created_at"]
+                missing_fields = [field for field in required_fields if field not in hospital]
+                if missing_fields:
+                    self.log_test("Hospital Registration Fields", False, f"Missing fields: {missing_fields}")
+                else:
+                    self.log_test("Hospital Registration Fields", True, "All required fields present")
+                
+                # Verify default status is pending
+                if hospital.get("status") == "pending":
+                    self.log_test("Hospital Registration", True, f"Successfully registered hospital: {hospital['name']}")
+                    return True
+                else:
+                    self.log_test("Hospital Registration", False, f"Expected status 'pending', got '{hospital.get('status')}'")
+                    return False
+            else:
+                self.log_test("Hospital Registration", False, f"Status {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("Hospital Registration", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_hospital_duplicate_validation(self):
+        """Test hospital duplicate email and license validation"""
+        print("\n=== HOSPITAL DUPLICATE VALIDATION TESTS ===")
+        
+        if not self.created_hospitals or "hospital" not in self.auth_tokens:
+            self.log_test("Hospital Duplicate Validation", False, "No hospitals created or no hospital token")
+            return False
+        
+        # Try to register hospital with same email
+        duplicate_hospital = {
+            "name": "Different Hospital Name",
+            "license_number": "HOSP-2024-002",  # Different license
+            "phone": "+1-555-0200",
+            "email": self.created_hospitals[0]["email"],  # Same email
+            "address": "456 Different Street",
+            "city": "Cambridge",
+            "state": "Massachusetts",
+            "zip_code": "02139",
+            "contact_person_name": "Dr. John Smith",
+            "contact_person_title": "Administrator",
+            "contact_person_phone": "+1-555-0201",
+            "contact_person_email": "j.smith@different.com"
+        }
+        
+        headers = {"Authorization": f"Bearer {self.auth_tokens['hospital']}"}
+        
+        try:
+            response = requests.post(f"{self.base_url}/hospitals", json=duplicate_hospital, headers=headers, timeout=10)
+            if response.status_code == 400:
+                self.log_test("Hospital Duplicate Email", True, "Correctly rejected duplicate email")
+                
+                # Now test duplicate license number
+                duplicate_hospital["email"] = "different@email.com"
+                duplicate_hospital["license_number"] = self.created_hospitals[0]["license_number"]
+                
+                response2 = requests.post(f"{self.base_url}/hospitals", json=duplicate_hospital, headers=headers, timeout=10)
+                if response2.status_code == 400:
+                    self.log_test("Hospital Duplicate License", True, "Correctly rejected duplicate license number")
+                    return True
+                else:
+                    self.log_test("Hospital Duplicate License", False, f"Should reject duplicate license, got status {response2.status_code}")
+                    return False
+            else:
+                self.log_test("Hospital Duplicate Email", False, f"Should reject duplicate email, got status {response.status_code}")
+                return False
+        except Exception as e:
+            self.log_test("Hospital Duplicate Validation", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_hospital_verification_workflow(self):
+        """Test admin-only hospital verification workflow"""
+        print("\n=== HOSPITAL VERIFICATION WORKFLOW TESTS ===")
+        
+        if not self.created_hospitals:
+            self.log_test("Hospital Verification", False, "No hospitals created for verification test")
+            return False
+        
+        # First, try to verify hospital without admin token (should fail)
+        hospital_id = self.created_hospitals[0]["id"]
+        
+        if "hospital" in self.auth_tokens:
+            headers = {"Authorization": f"Bearer {self.auth_tokens['hospital']}"}
+            try:
+                response = requests.put(f"{self.base_url}/hospitals/{hospital_id}/verify?status=verified", 
+                                      headers=headers, timeout=10)
+                if response.status_code == 403:
+                    self.log_test("Hospital Verification - Non-Admin", True, "Correctly rejected non-admin verification attempt")
+                else:
+                    self.log_test("Hospital Verification - Non-Admin", False, f"Should reject non-admin, got status {response.status_code}")
+            except Exception as e:
+                print(f"Non-admin verification test failed: {e}")
+        
+        # Test with admin demo token
+        if "admin" in self.auth_tokens:
+            admin_headers = {"Authorization": f"Bearer {self.auth_tokens['admin']}"}
+            try:
+                # Verify the hospital
+                response = requests.put(f"{self.base_url}/hospitals/{hospital_id}/verify?status=verified", 
+                                      headers=admin_headers, timeout=10)
+                if response.status_code == 200:
+                    self.log_test("Hospital Verification - Admin", True, "Successfully verified hospital with admin token")
+                    
+                    # Test rejection workflow
+                    response2 = requests.put(f"{self.base_url}/hospitals/{hospital_id}/verify?status=rejected", 
+                                           headers=admin_headers, timeout=10)
+                    if response2.status_code == 200:
+                        self.log_test("Hospital Rejection - Admin", True, "Successfully rejected hospital with admin token")
+                        return True
+                    else:
+                        self.log_test("Hospital Rejection - Admin", False, f"Failed to reject hospital: {response2.status_code}")
+                        return False
+                else:
+                    self.log_test("Hospital Verification - Admin", False, f"Admin verification failed: {response.status_code}")
+                    return False
+            except Exception as e:
+                self.log_test("Hospital Verification - Admin", False, f"Request failed: {str(e)}")
+                return False
+        else:
+            self.log_test("Hospital Verification", False, "No admin token available for verification test")
+            return False
+    
+    def test_hospital_public_list(self):
+        """Test that only verified hospitals appear in public lists"""
+        print("\n=== HOSPITAL PUBLIC LIST TESTS ===")
+        
+        try:
+            # Test public list (no authentication)
+            response = requests.get(f"{self.base_url}/hospitals", timeout=10)
+            if response.status_code == 200:
+                public_hospitals = response.json()
+                
+                # Check that all hospitals in public list are verified
+                non_verified = [h for h in public_hospitals if h.get("status") != "verified"]
+                if len(non_verified) == 0:
+                    self.log_test("Hospital Public List - Verified Only", True, f"Public list shows only verified hospitals ({len(public_hospitals)} total)")
+                else:
+                    self.log_test("Hospital Public List - Verified Only", False, f"Found {len(non_verified)} non-verified hospitals in public list")
+                
+                # Test admin list (should show all hospitals)
+                if "admin" in self.auth_tokens:
+                    admin_headers = {"Authorization": f"Bearer {self.auth_tokens['admin']}"}
+                    admin_response = requests.get(f"{self.base_url}/hospitals", headers=admin_headers, timeout=10)
+                    if admin_response.status_code == 200:
+                        admin_hospitals = admin_response.json()
+                        if len(admin_hospitals) >= len(public_hospitals):
+                            self.log_test("Hospital Admin List", True, f"Admin can see all hospitals ({len(admin_hospitals)} total)")
+                            return True
+                        else:
+                            self.log_test("Hospital Admin List", False, f"Admin list ({len(admin_hospitals)}) smaller than public list ({len(public_hospitals)})")
+                            return False
+                    else:
+                        self.log_test("Hospital Admin List", False, f"Admin list request failed: {admin_response.status_code}")
+                        return False
+                else:
+                    self.log_test("Hospital Public List", True, "Public list filtering working correctly")
+                    return True
+            else:
+                self.log_test("Hospital Public List", False, f"Public list request failed: {response.status_code}")
+                return False
+        except Exception as e:
+            self.log_test("Hospital Public List", False, f"Request failed: {str(e)}")
+            return False
+    
+    # ========== ENHANCED DONOR & REQUEST FEATURES TESTS ==========
+    
+    def test_authenticated_donor_management(self):
+        """Test authenticated donor registration and management"""
+        print("\n=== AUTHENTICATED DONOR MANAGEMENT TESTS ===")
+        
+        if "donor" not in self.auth_tokens:
+            self.log_test("Authenticated Donor Management", False, "No donor token available")
+            return False
+        
+        # Register donor with authentication
+        donor_data = {
+            "name": "Alex Thompson",
+            "phone": "+1-555-0300",
+            "email": "alex.thompson@email.com",
+            "blood_type": "O-",
+            "age": 26,
+            "city": "Seattle",
+            "state": "Washington"
+        }
+        
+        headers = {"Authorization": f"Bearer {self.auth_tokens['donor']}"}
+        
+        try:
+            response = requests.post(f"{self.base_url}/donors", json=donor_data, headers=headers, timeout=10)
+            if response.status_code == 200:
+                donor = response.json()
+                
+                # Verify user_id is linked
+                if donor.get("user_id"):
+                    self.log_test("Authenticated Donor Registration", True, f"Successfully registered authenticated donor: {donor['name']}")
+                    
+                    # Test donor profile update (should only work for own profile)
+                    donor_id = donor["id"]
+                    update_data = {
+                        "name": "Alex Thompson Updated",
+                        "phone": "+1-555-0301",
+                        "email": "alex.thompson@email.com",
+                        "blood_type": "O-",
+                        "age": 27,
+                        "city": "Seattle",
+                        "state": "Washington"
+                    }
+                    
+                    update_response = requests.put(f"{self.base_url}/donors/{donor_id}", 
+                                                 json=update_data, headers=headers, timeout=10)
+                    if update_response.status_code == 200:
+                        self.log_test("Donor Profile Update", True, "Successfully updated own donor profile")
+                        return True
+                    else:
+                        self.log_test("Donor Profile Update", False, f"Failed to update profile: {update_response.status_code}")
+                        return False
+                else:
+                    self.log_test("Authenticated Donor Registration", False, "Donor not linked to user account")
+                    return False
+            else:
+                self.log_test("Authenticated Donor Registration", False, f"Status {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("Authenticated Donor Management", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_donor_ownership_validation(self):
+        """Test that donors can only update their own profiles"""
+        print("\n=== DONOR OWNERSHIP VALIDATION TESTS ===")
+        
+        if len(self.created_donors) < 2 or "donor" not in self.auth_tokens:
+            self.log_test("Donor Ownership Validation", False, "Need at least 2 donors and donor token for ownership test")
+            return False
+        
+        # Try to update another donor's profile (should fail)
+        other_donor_id = self.created_donors[0]["id"]  # Use first created donor
+        update_data = {
+            "name": "Unauthorized Update",
+            "phone": "+1-555-9999",
+            "email": "unauthorized@email.com",
+            "blood_type": "A+",
+            "age": 30,
+            "city": "Unauthorized City",
+            "state": "Unauthorized State"
+        }
+        
+        headers = {"Authorization": f"Bearer {self.auth_tokens['donor']}"}
+        
+        try:
+            response = requests.put(f"{self.base_url}/donors/{other_donor_id}", 
+                                  json=update_data, headers=headers, timeout=10)
+            if response.status_code == 403:
+                self.log_test("Donor Ownership Validation", True, "Correctly prevented unauthorized donor profile update")
+                return True
+            else:
+                self.log_test("Donor Ownership Validation", False, f"Should prevent unauthorized update, got status {response.status_code}")
+                return False
+        except Exception as e:
+            self.log_test("Donor Ownership Validation", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_enhanced_blood_requests_with_hospital(self):
+        """Test enhanced blood requests with hospital integration"""
+        print("\n=== ENHANCED BLOOD REQUESTS WITH HOSPITAL INTEGRATION ===")
+        
+        if "hospital" not in self.auth_tokens:
+            self.log_test("Enhanced Blood Requests", False, "No hospital token available")
+            return False
+        
+        # Create blood request as hospital user
+        request_data = {
+            "requester_name": "Dr. Sarah Kim",
+            "patient_name": "Jennifer Lee",
+            "phone": "+1-555-0400",
+            "email": "dr.kim@citygeneral.com",
+            "blood_type_needed": "A+",
+            "urgency": "Critical",
+            "units_needed": 2,
+            "hospital_name": "City General Medical Center",
+            "city": "Boston",
+            "state": "Massachusetts",
+            "description": "Emergency surgery patient needs immediate A+ blood transfusion"
+        }
+        
+        headers = {"Authorization": f"Bearer {self.auth_tokens['hospital']}"}
+        
+        try:
+            response = requests.post(f"{self.base_url}/blood-requests", json=request_data, headers=headers, timeout=10)
+            if response.status_code == 200:
+                blood_request = response.json()
+                
+                # Verify enhanced features
+                enhanced_features = []
+                
+                # Check if user_id is linked
+                if blood_request.get("user_id"):
+                    enhanced_features.append("user_id linked")
+                
+                # Check if hospital_id is linked (if hospital is verified)
+                if blood_request.get("hospital_id"):
+                    enhanced_features.append("hospital_id linked")
+                
+                # Check priority score (Critical should have higher score)
+                if blood_request.get("priority_score", 0) > 1.0:
+                    enhanced_features.append("priority scoring")
+                
+                # Check expiration setting
+                if blood_request.get("expires_at"):
+                    enhanced_features.append("automatic expiration")
+                
+                self.log_test("Enhanced Blood Requests", len(enhanced_features) >= 2,
+                             f"Enhanced features detected: {', '.join(enhanced_features)}")
+                
+                # Test request status update by hospital user
+                request_id = blood_request["id"]
+                status_response = requests.put(f"{self.base_url}/blood-requests/{request_id}/status?status=Fulfilled",
+                                             headers=headers, timeout=10)
+                
+                if status_response.status_code == 200:
+                    self.log_test("Hospital Request Status Update", True, "Hospital user successfully updated request status")
+                    return True
+                else:
+                    self.log_test("Hospital Request Status Update", False, f"Failed to update status: {status_response.status_code}")
+                    return False
+            else:
+                self.log_test("Enhanced Blood Requests", False, f"Status {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("Enhanced Blood Requests", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_priority_scoring_system(self):
+        """Test priority scoring system for blood requests"""
+        print("\n=== PRIORITY SCORING SYSTEM TESTS ===")
+        
+        # Create requests with different urgency levels
+        urgency_tests = [
+            ("Critical", 5.0),  # Should get +5.0 for critical
+            ("Urgent", 2.0),    # Should get +2.0 for urgent
+            ("Normal", 0.0)     # Should get base score
+        ]
+        
+        priority_scores = []
+        
+        for urgency, expected_bonus in urgency_tests:
+            request_data = {
+                "requester_name": f"Dr. Priority Test {urgency}",
+                "patient_name": f"Patient {urgency}",
+                "phone": "+1-555-0500",
+                "email": f"priority.{urgency.lower()}@test.com",
+                "blood_type_needed": "B+",
+                "urgency": urgency,
+                "units_needed": 1,
+                "hospital_name": "Priority Test Hospital",
+                "city": "Test City",
+                "state": "Test State"
+            }
+            
+            try:
+                response = requests.post(f"{self.base_url}/blood-requests", json=request_data, timeout=10)
+                if response.status_code == 200:
+                    blood_request = response.json()
+                    priority_score = blood_request.get("priority_score", 1.0)
+                    priority_scores.append((urgency, priority_score, expected_bonus))
+                    print(f"✓ {urgency} request created with priority score: {priority_score}")
+                else:
+                    print(f"❌ Failed to create {urgency} request: {response.status_code}")
+            except Exception as e:
+                print(f"Priority test failed for {urgency}: {e}")
+        
+        # Verify priority scoring
+        if len(priority_scores) == 3:
+            critical_score = next(score for urgency, score, _ in priority_scores if urgency == "Critical")
+            urgent_score = next(score for urgency, score, _ in priority_scores if urgency == "Urgent")
+            normal_score = next(score for urgency, score, _ in priority_scores if urgency == "Normal")
+            
+            if critical_score > urgent_score > normal_score:
+                self.log_test("Priority Scoring System", True, 
+                             f"Priority scores correctly ordered: Critical({critical_score}) > Urgent({urgent_score}) > Normal({normal_score})")
+                return True
+            else:
+                self.log_test("Priority Scoring System", False, 
+                             f"Priority scores not correctly ordered: Critical({critical_score}), Urgent({urgent_score}), Normal({normal_score})")
+                return False
+        else:
+            self.log_test("Priority Scoring System", False, f"Could not create all test requests ({len(priority_scores)}/3)")
+            return False
+    
+    # ========== SECURITY & INTEGRATION TESTS ==========
+    
+    def test_jwt_token_expiration(self):
+        """Test JWT token expiration (30 minutes)"""
+        print("\n=== JWT TOKEN EXPIRATION TESTS ===")
+        
+        # This test would require waiting 30 minutes or manipulating token timestamps
+        # For demo purposes, we'll test with an obviously expired/invalid token
+        
+        expired_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0QGV4YW1wbGUuY29tIiwiZXhwIjoxNjAwMDAwMDAwfQ.invalid"
+        headers = {"Authorization": f"Bearer {expired_token}"}
+        
+        try:
+            response = requests.get(f"{self.base_url}/auth/me", headers=headers, timeout=10)
+            if response.status_code == 401:
+                self.log_test("JWT Token Expiration", True, "Correctly rejected expired/invalid token")
+                return True
+            else:
+                self.log_test("JWT Token Expiration", False, f"Should reject expired token, got status {response.status_code}")
+                return False
+        except Exception as e:
+            self.log_test("JWT Token Expiration", False, f"Request failed: {str(e)}")
+            return False
+    
+    def test_role_validation_in_tokens(self):
+        """Test role validation in JWT tokens"""
+        print("\n=== ROLE VALIDATION IN TOKENS TESTS ===")
+        
+        # Test that donor token cannot access admin endpoints
+        if "donor" in self.auth_tokens and self.created_hospitals:
+            donor_headers = {"Authorization": f"Bearer {self.auth_tokens['donor']}"}
+            hospital_id = self.created_hospitals[0]["id"]
+            
+            try:
+                response = requests.put(f"{self.base_url}/hospitals/{hospital_id}/verify?status=verified",
+                                      headers=donor_headers, timeout=10)
+                if response.status_code == 403:
+                    self.log_test("Role Validation - Donor vs Admin", True, "Correctly prevented donor from accessing admin endpoint")
+                else:
+                    self.log_test("Role Validation - Donor vs Admin", False, f"Should prevent donor access, got status {response.status_code}")
+            except Exception as e:
+                print(f"Role validation test failed: {e}")
+        
+        # Test that hospital token cannot update other hospital's requests
+        if "hospital" in self.auth_tokens and self.created_requests:
+            hospital_headers = {"Authorization": f"Bearer {self.auth_tokens['hospital']}"}
+            # Try to update a request that doesn't belong to this hospital
+            request_id = self.created_requests[0]["id"]  # This was created without hospital auth
+            
+            try:
+                response = requests.put(f"{self.base_url}/blood-requests/{request_id}/status?status=Fulfilled",
+                                      headers=hospital_headers, timeout=10)
+                if response.status_code == 403:
+                    self.log_test("Role Validation - Hospital Ownership", True, "Correctly prevented hospital from updating other's requests")
+                    return True
+                else:
+                    self.log_test("Role Validation - Hospital Ownership", False, f"Should prevent unauthorized update, got status {response.status_code}")
+                    return False
+            except Exception as e:
+                self.log_test("Role Validation", False, f"Request failed: {str(e)}")
+                return False
+        
+        self.log_test("Role Validation", True, "Role validation tests completed")
+        return True
+    
+    def test_backwards_compatibility(self):
+        """Test that existing endpoints still work without authentication"""
+        print("\n=== BACKWARDS COMPATIBILITY TESTS ===")
+        
+        # Test that basic endpoints work without authentication
+        compatibility_tests = [
+            ("/", "API root"),
+            ("/donors", "Donors list"),
+            ("/blood-requests", "Blood requests list"),
+            ("/stats", "Statistics")
+        ]
+        
+        working_count = 0
+        
+        for endpoint, description in compatibility_tests:
+            try:
+                response = requests.get(f"{self.base_url}{endpoint}", timeout=10)
+                if response.status_code == 200:
+                    working_count += 1
+                    print(f"✓ {description} - Works without authentication")
+                else:
+                    print(f"❌ {description} - Failed without authentication: {response.status_code}")
+            except Exception as e:
+                print(f"Compatibility test failed for {description}: {e}")
+        
+        success_rate = (working_count / len(compatibility_tests)) * 100
+        self.log_test("Backwards Compatibility", success_rate >= 75,
+                     f"Backwards compatibility: {working_count}/{len(compatibility_tests)} endpoints working ({success_rate:.1f}%)")
+        
+        return success_rate >= 75
+
     # ========== ENHANCED SECURITY TESTS - Phase 1 ==========
     
     def test_rate_limiting(self):

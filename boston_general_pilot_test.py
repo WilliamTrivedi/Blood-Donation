@@ -68,8 +68,12 @@ class BostonGeneralPilotTester:
         print("\n🏥 PHASE 1: HOSPITAL AUTHENTICATION & REGISTRATION")
         print("=" * 60)
         
+        # Use unique email to avoid duplicates
+        import time
+        unique_id = int(time.time())
+        
         user_data = {
-            "email": "pilot@bostongeneral.com",
+            "email": f"pilot.{unique_id}@bostongeneral.com",
             "password": "Hospital123!",
             "role": "hospital"
         }

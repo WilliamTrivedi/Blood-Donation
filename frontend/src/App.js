@@ -11,7 +11,8 @@ const WS_URL = BACKEND_URL.replace('https', 'wss').replace('http', 'ws');
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const URGENCY_LEVELS = ["Critical", "Urgent", "Normal"];
 
-function App() {
+function BloodConnectApp() {
+  const { user, logout, isAuthenticated, isDemo } = useAuth();
   const [activeTab, setActiveTab] = useState("home");
   const [donors, setDonors] = useState([]);
   const [bloodRequests, setBloodRequests] = useState([]);
@@ -20,6 +21,7 @@ function App() {
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [showDisclaimer, setShowDisclaimer] = useState(true);
   const [formErrors, setFormErrors] = useState({});
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   // Form validation functions
   const validatePhone = (phone) => {

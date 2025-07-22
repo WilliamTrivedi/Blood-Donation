@@ -23,6 +23,9 @@ class BloodDonationAPITester:
         self.test_results = []
         self.created_donors = []
         self.created_requests = []
+        self.created_hospitals = []
+        self.auth_tokens = {}  # Store authentication tokens
+        self.created_users = []  # Store created user accounts
         
     def log_test(self, test_name, success, message, details=None):
         """Log test results"""

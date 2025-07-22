@@ -58,9 +58,19 @@ api_router = APIRouter(prefix="/api")
 # Input validation and sanitization functions
 def validate_phone(phone: str) -> bool:
     """Validate phone number format"""
-    phone_pattern = r'^[\+]?[1-9][\d]{0,15}$'
+    if not phone:
+        return False
+    # Remove all non-digit characters except +
     clean_phone = re.sub(r'[^\d\+]', '', phone)
-    return bool(re.match(phone_pattern, clean_phone)) and len(clean_phone) >= 10
+    # Must have at least 10 digits
+    digits_only = re.sub(r'[^\d]', '', clean_phone)
+    if len(digits_only) < 10:
+        return False
+    # Allow + at the beginning
+    if clean_phone.startswith('+'):
+        return len(digits_only) >= 10 and len(digits_only) <= 15
+    else:
+        return len(digits_only) >= 10 and len(digits_only) <= 15
 
 def validate_email(email: str) -> bool:
     """Validate email format"""

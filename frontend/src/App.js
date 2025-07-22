@@ -1276,6 +1276,25 @@ function BloodConnectApp() {
                 View Donors
               </button>
               
+              {/* Role-specific dashboards */}
+              {isAuthenticated && user?.role === 'admin' && (
+                <button
+                  onClick={() => setActiveTab("admin")}
+                  className={`px-4 py-2 rounded-md ${activeTab === "admin" ? "bg-red-600 text-white" : "text-gray-600 hover:text-red-600"}`}
+                >
+                  🛠️ Admin
+                </button>
+              )}
+              
+              {isAuthenticated && user?.role === 'hospital' && (
+                <button
+                  onClick={() => setActiveTab("hospital")}
+                  className={`px-4 py-2 rounded-md ${activeTab === "hospital" ? "bg-red-600 text-white" : "text-gray-600 hover:text-red-600"}`}
+                >
+                  🏥 Hospital
+                </button>
+              )}
+              
               {/* Authentication Section */}
               {isAuthenticated ? (
                 <div className="flex items-center space-x-2 border-l pl-4 ml-4">

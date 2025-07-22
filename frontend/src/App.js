@@ -729,14 +729,19 @@ function App() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <label className="block text-sm font-medium text-gray-700">Email *</label>
             <input
               type="email"
               value={donorForm.email}
               onChange={(e) => setDonorForm({...donorForm, email: e.target.value})}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 border p-2"
+              className={`mt-1 block w-full rounded-md shadow-sm focus:ring-red-500 border p-2 ${
+                formErrors.email ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-red-500'
+              }`}
               required
+              maxLength="254"
+              placeholder="example@email.com"
             />
+            {renderFormError('email')}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

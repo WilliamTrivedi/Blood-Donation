@@ -523,7 +523,7 @@ function App() {
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-              <span className="text-sm">🩸 Live Emergency Alerts Active</span>
+              <span className="text-sm">🩸 Live Emergency Alerts Active - DEMO MODE</span>
             </div>
             <div className="text-sm">
               {stats?.active_alert_connections || 0} Connected | 
@@ -532,6 +532,18 @@ function App() {
           </div>
         </div>
       )}
+      
+      {/* Demo Warning Banner */}
+      <div className="bg-yellow-100 border-b border-yellow-300 px-4 py-2">
+        <div className="max-w-7xl mx-auto flex items-center justify-center">
+          <div className="flex items-center space-x-2">
+            <span className="text-yellow-800">⚠️</span>
+            <span className="text-sm text-yellow-800 font-medium">
+              DEMONSTRATION SYSTEM ONLY - For real medical emergencies, call 911 immediately
+            </span>
+          </div>
+        </div>
+      </div>
       
       {/* Alert Feed */}
       {alerts.length > 0 && (

@@ -380,12 +380,80 @@ function App() {
 
   const handleRequestSubmit = async (e) => {
     e.preventDefault();
+    
+    // Clear previous errors
+    setFormErrors({});
+    const errors = {};
+    
+    // Validate all fields
+    const requesterError = validateRequired(requestForm.requester_name, "Your Name");
+    if (requesterError) errors.requester_name = requesterError;
+    
+    const patientError = validateRequired(requestForm.patient_name, "Patient Name");
+    if (patientError) errors.patient_name = patientError;
+    
+    if (!validatePhone(requestForm.phone)) {
+      errors.phone = "Please enter a valid phone number (10+ digits)";
+    }
+    
+    if (!validateEmail(requestForm.email)) {
+      errors.email = "Please enter a valid email address";
+    }
+    
+    if (!requestForm.blood_type_needed) {
+      errors.blood_type_needed = "Please select the blood type needed";
+    }
+    
+    if (!requestForm.urgency) {
+      errors.urgency = "Please select urgency level";
+    }
+    
+    const unitsError = validateUnits(requestForm.units_needed);
+    if (unitsError) errors.units_needed = unitsError;
+    
+    const hospitalError = validateRequired(requestForm.hospital_name, "Hospital Name");
+    if (hospitalError) errors.hospital_name = hospitalError;
+    
+    const cityError = validateRequired(requestForm.city, "City");
+    if (cityError) errors.city = cityError;
+    
+    const stateError = validateRequired(requestForm.state, "State");
+    if (stateError) errors.state = stateError;
+    
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    
     try {
-      await axios.post(`${API}/blood-requests`, {
+      // Sanitize inputs
+      const sanitizedForm = {
         ...requestForm,
+        requester_name: sanitizeInput(requestForm.requester_name),
+        patient_name: sanitizeInput(requestForm.patient_name),
+        phone: sanitizeInput(requestForm.phone),
+        email: sanitizeInput(requestForm.email.toLowerCase()),
+        hospital_name: sanitizeInput(requestForm.hospital_name),
+        city: sanitizeInput(requestForm.city),
+        state: sanitizeInput(requestForm.state),
+        description: sanitizeInput(requestForm.description),
         units_needed: parseInt(requestForm.units_needed)
-      });
-      alert("Blood request created successfully! Compatible donors have been notified.");
+      };
+      
+      await axios.post(`${API}/blood-requests`, sanitizedForm);
+      
+      let alertMessage = "✅ DEMO REQUEST CREATED SUCCESSFULLY!\n\n";
+      if (requestForm.urgency === "Critical") {
+        alertMessage += "🚨 In demo mode, this would send instant alerts with sound to all compatible donors.\n\n";
+      } else if (requestForm.urgency === "Urgent") {
+        alertMessage += "⚡ In demo mode, this would send instant alerts to all compatible donors.\n\n";
+      } else {
+        alertMessage += "📢 Normal priority request posted without emergency alerts.\n\n";
+      }
+      alertMessage += "⚠️ REMINDER: This is a demonstration system only.\n🚨 For real medical emergencies, call 911 immediately!";
+      
+      alert(alertMessage);
+      
       setRequestForm({
         requester_name: "",
         patient_name: "",
@@ -401,7 +469,8 @@ function App() {
       });
       fetchStats();
     } catch (error) {
-      alert(error.response?.data?.detail || "Error creating blood request");
+      const errorMessage = error.response?.data?.detail || "Error creating blood request. Please check your information and try again.";
+      alert(`❌ Request Failed:\n\n${errorMessage}\n\n⚠️ Remember: This is a demo system only.`);
     }
   };
 

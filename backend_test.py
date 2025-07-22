@@ -894,7 +894,7 @@ class BloodDonationAPITester:
         duplicate_hospital = {
             "name": "Different Hospital Name",
             "license_number": "HOSP-2024-002",  # Different license
-            "phone": "+1-555-0200",
+            "phone": "+1-555-020-0000",
             "email": self.created_hospitals[0]["email"],  # Same email
             "address": "456 Different Street",
             "city": "Cambridge",

@@ -24,10 +24,11 @@ def validate_phone(phone: str) -> bool:
     """Validate phone number format"""
     if not phone:
         return False
-    # Remove all non-digit characters
-    digits_only = re.sub(r'[^\d]', '', phone)
-    # Must have at least 10 digits and at most 15
-    return 10 <= len(digits_only) <= 15
+    # Remove all non-digit characters except +
+    clean_phone = re.sub(r'[^\d\+]', '', phone)
+    # Must have at least 10 digits
+    digits_only = re.sub(r'[^\d]', '', clean_phone)
+    return len(digits_only) >= 10 and len(digits_only) <= 15
 
 def validate_email(email: str) -> bool:
     """Validate email format"""

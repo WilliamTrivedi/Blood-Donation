@@ -110,11 +110,15 @@ class BostonGeneralPilotTester:
             self.log_test("Hospital Profile Registration", False, "No hospital token available")
             return False
         
+        # Use unique ID for hospital data too
+        import time
+        unique_id = int(time.time())
+        
         hospital_data = {
             "name": "Boston General Hospital",
-            "license_number": "HOSP-MA-2024-BGH",
+            "license_number": f"HOSP-MA-2024-BGH-{unique_id}",  # Make license unique too
             "phone": "+1-617-555-0100",
-            "email": "admin@bostongeneral.com",
+            "email": f"admin.{unique_id}@bostongeneral.com",
             "address": "1 Boston Medical Plaza",
             "city": "Boston",
             "state": "Massachusetts",
@@ -123,7 +127,7 @@ class BostonGeneralPilotTester:
             "contact_person_name": "Dr. Sarah Martinez",
             "contact_person_title": "Chief Medical Officer",
             "contact_person_phone": "+1-617-555-0100",
-            "contact_person_email": "s.martinez@bostongeneral.com"
+            "contact_person_email": f"s.martinez.{unique_id}@bostongeneral.com"
         }
         
         headers = {"Authorization": f"Bearer {self.auth_tokens['hospital']}"}

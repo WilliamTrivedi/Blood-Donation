@@ -121,7 +121,7 @@ class BloodDonationAPITester:
         # Try to register with same email as first donor
         duplicate_donor = {
             "name": "Different Name",
-            "phone": "+1-555-9999",
+            "phone": "+1-555-999-9999",  # Fixed: proper phone
             "email": self.created_donors[0]["email"],  # Same email
             "blood_type": "A+",
             "age": 30,

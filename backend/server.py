@@ -31,7 +31,7 @@ from auth import (
 )
 from models import (
     Donor, DonorCreate, BloodRequest, BloodRequestCreate, Hospital, HospitalCreate,
-    EmergencyAlert, UserDB as User, UserCreate, HospitalStatus, BloodRequestStatus, BloodRequestUrgency
+    EmergencyAlert, UserDB, UserCreate, HospitalStatus, BloodRequestStatus, BloodRequestUrgency
 )
 
 

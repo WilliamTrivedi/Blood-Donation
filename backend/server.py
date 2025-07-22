@@ -243,189 +243,6 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-# Blood type compatibility mapping
-BLOOD_COMPATIBILITY = {
-    "O-": ["O-", "O+", "A-", "A+", "B-", "B+", "AB-", "AB+"],
-    "O+": ["O+", "A+", "B+", "AB+"],
-    "A-": ["A-", "A+", "AB-", "AB+"],
-    "A+": ["A+", "AB+"],
-    "B-": ["B-", "B+", "AB-", "AB+"],
-    "B+": ["B+", "AB+"],
-    "AB-": ["AB-", "AB+"],
-    "AB+": ["AB+"]
-}
-
-# Enhanced Models with validation
-class Donor(BaseModel):
-    id: str = Field(default_factory=generate_secure_id)
-    name: str = Field(min_length=2, max_length=100)
-    phone: str = Field(min_length=10, max_length=20)
-    email: str = Field(min_length=5, max_length=254)
-    blood_type: str
-    age: int = Field(ge=18, le=65)
-    city: str = Field(min_length=2, max_length=100)
-    state: str = Field(min_length=2, max_length=100)
-    is_available: bool = True
-    last_donation: Optional[datetime] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    is_online: bool = False
-
-    @validator('name', 'city', 'state')
-    def sanitize_text_fields(cls, v):
-        return sanitize_input(v)
-
-    @validator('phone')
-    def validate_phone_format(cls, v):
-        if not validate_phone(v):
-            raise ValueError('Invalid phone number format')
-        return sanitize_input(v)
-
-    @validator('email')
-    def validate_email_format(cls, v):
-        if not validate_email(v.lower()):
-            raise ValueError('Invalid email format')
-        return sanitize_input(v.lower())
-
-    @validator('blood_type')
-    def validate_blood_type_format(cls, v):
-        if not validate_blood_type(v):
-            raise ValueError('Invalid blood type')
-        return v
-
-class DonorCreate(BaseModel):
-    name: str = Field(min_length=2, max_length=100)
-    phone: str = Field(min_length=10, max_length=20)
-    email: str = Field(min_length=5, max_length=254)
-    blood_type: str
-    age: int = Field(ge=18, le=65)
-    city: str = Field(min_length=2, max_length=100)
-    state: str = Field(min_length=2, max_length=100)
-
-    @validator('name', 'city', 'state')
-    def sanitize_text_fields(cls, v):
-        return sanitize_input(v)
-
-    @validator('phone')
-    def validate_phone_format(cls, v):
-        if not validate_phone(v):
-            raise ValueError('Invalid phone number format')
-        return sanitize_input(v)
-
-    @validator('email')
-    def validate_email_format(cls, v):
-        if not validate_email(v.lower()):
-            raise ValueError('Invalid email format')
-        return sanitize_input(v.lower())
-
-    @validator('blood_type')
-    def validate_blood_type_format(cls, v):
-        if not validate_blood_type(v):
-            raise ValueError('Invalid blood type')
-        return v
-
-class BloodRequest(BaseModel):
-    id: str = Field(default_factory=generate_secure_id)
-    requester_name: str = Field(min_length=2, max_length=100)
-    patient_name: str = Field(min_length=2, max_length=100)
-    phone: str = Field(min_length=10, max_length=20)
-    email: str = Field(min_length=5, max_length=254)
-    blood_type_needed: str
-    urgency: str
-    units_needed: int = Field(ge=1, le=10)
-    hospital_name: str = Field(min_length=2, max_length=200)
-    city: str = Field(min_length=2, max_length=100)
-    state: str = Field(min_length=2, max_length=100)
-    description: Optional[str] = Field(max_length=1000, default=None)
-    status: str = "Active"
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    alerts_sent: int = 0
-
-    @validator('requester_name', 'patient_name', 'city', 'state', 'hospital_name')
-    def sanitize_text_fields(cls, v):
-        return sanitize_input(v)
-
-    @validator('description')
-    def sanitize_description(cls, v):
-        return sanitize_input(v) if v else None
-
-    @validator('phone')
-    def validate_phone_format(cls, v):
-        if not validate_phone(v):
-            raise ValueError('Invalid phone number format')
-        return sanitize_input(v)
-
-    @validator('email')
-    def validate_email_format(cls, v):
-        if not validate_email(v.lower()):
-            raise ValueError('Invalid email format')
-        return sanitize_input(v.lower())
-
-    @validator('blood_type_needed')
-    def validate_blood_type_format(cls, v):
-        if not validate_blood_type(v):
-            raise ValueError('Invalid blood type')
-        return v
-
-    @validator('urgency')
-    def validate_urgency_level(cls, v):
-        valid_urgency = ["Critical", "Urgent", "Normal"]
-        if v not in valid_urgency:
-            raise ValueError('Invalid urgency level')
-        return v
-
-class BloodRequestCreate(BaseModel):
-    requester_name: str = Field(min_length=2, max_length=100)
-    patient_name: str = Field(min_length=2, max_length=100)
-    phone: str = Field(min_length=10, max_length=20)
-    email: str = Field(min_length=5, max_length=254)
-    blood_type_needed: str
-    urgency: str
-    units_needed: int = Field(ge=1, le=10)
-    hospital_name: str = Field(min_length=2, max_length=200)
-    city: str = Field(min_length=2, max_length=100)
-    state: str = Field(min_length=2, max_length=100)
-    description: Optional[str] = Field(max_length=1000, default=None)
-
-    @validator('requester_name', 'patient_name', 'city', 'state', 'hospital_name')
-    def sanitize_text_fields(cls, v):
-        return sanitize_input(v)
-
-    @validator('description')
-    def sanitize_description(cls, v):
-        return sanitize_input(v) if v else None
-
-    @validator('phone')
-    def validate_phone_format(cls, v):
-        if not validate_phone(v):
-            raise ValueError('Invalid phone number format')
-        return sanitize_input(v)
-
-    @validator('email')
-    def validate_email_format(cls, v):
-        if not validate_email(v.lower()):
-            raise ValueError('Invalid email format')
-        return sanitize_input(v.lower())
-
-    @validator('blood_type_needed')
-    def validate_blood_type_format(cls, v):
-        if not validate_blood_type(v):
-            raise ValueError('Invalid blood type')
-        return v
-
-    @validator('urgency')
-    def validate_urgency_level(cls, v):
-        valid_urgency = ["Critical", "Urgent", "Normal"]
-        if v not in valid_urgency:
-            raise ValueError('Invalid urgency level')
-        return v
-
-class EmergencyAlert(BaseModel):
-    id: str = Field(default_factory=generate_secure_id)
-    blood_request_id: str
-    alert_type: str
-    donors_notified: int
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
 # Helper functions
 def calculate_compatibility(donor_blood_type: str, requested_blood_type: str) -> bool:
     """Check if donor can donate to the requested blood type"""
@@ -498,14 +315,191 @@ async def websocket_endpoint(websocket: WebSocket):
             
         manager.disconnect(websocket, disconnected_donor)
 
-# Routes with rate limiting
+# Routes with rate limiting and authentication
+
+# Authentication routes
+@api_router.post("/auth/register", response_model=Token)
+@limiter.limit("3/minute")
+async def register_user(request: Request, user_data: UserCreate):
+    """Register a new user account"""
+    try:
+        # Validate password strength
+        if not validate_password(user_data.password):
+            raise HTTPException(
+                status_code=400, 
+                detail="Password must be at least 8 characters with uppercase, lowercase, and number"
+            )
+        
+        # Check if user already exists
+        existing_user = await db.users.find_one({"email": user_data.email})
+        if existing_user:
+            raise HTTPException(status_code=400, detail="User with this email already exists")
+        
+        # Create user account
+        hashed_password = get_password_hash(user_data.password)
+        user = User(
+            email=user_data.email,
+            password_hash=hashed_password,
+            role=user_data.role,
+            donor_id=user_data.donor_id,
+            hospital_id=user_data.hospital_id
+        )
+        
+        await db.users.insert_one(user.dict())
+        
+        # Create tokens
+        token_data = {"sub": user.email, "role": user.role.value, "user_id": user.id}
+        access_token = create_access_token(token_data)
+        refresh_token = create_refresh_token(token_data)
+        
+        return Token(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            user=user
+        )
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@api_router.post("/auth/login", response_model=Token)
+@limiter.limit("5/minute")
+async def login_user(request: Request, login_data: UserLogin):
+    """Login user and return authentication tokens"""
+    try:
+        # Find user by email
+        user_data = await db.users.find_one({"email": login_data.email})
+        if not user_data or not verify_password(login_data.password, user_data["password_hash"]):
+            raise HTTPException(
+                status_code=401,
+                detail="Incorrect email or password"
+            )
+        
+        user = User(**user_data)
+        if not user.is_active:
+            raise HTTPException(status_code=401, detail="Account is deactivated")
+        
+        # Update last login
+        await db.users.update_one(
+            {"id": user.id},
+            {"$set": {"last_login": datetime.utcnow()}}
+        )
+        
+        # Create tokens
+        token_data = {"sub": user.email, "role": user.role.value, "user_id": user.id}
+        access_token = create_access_token(token_data)
+        refresh_token = create_refresh_token(token_data)
+        
+        return Token(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            user=user
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@api_router.get("/auth/demo-token")
+@limiter.limit("10/minute")
+async def get_demo_token(request: Request, role: UserRole = UserRole.DONOR):
+    """Get a demo token for testing purposes"""
+    demo_token = create_demo_token(role)
+    return {"access_token": demo_token, "token_type": "bearer", "demo": True}
+
+@api_router.get("/auth/me")
+@limiter.limit("30/minute")
+async def get_current_user_info(request: Request, current_user: User = Depends(get_current_user)):
+    """Get current user information"""
+    return current_user
+
+# Hospital Management Routes
+@api_router.post("/hospitals", response_model=Hospital)
+@limiter.limit("3/minute")
+async def register_hospital(request: Request, hospital_data: HospitalCreate, current_user: User = Depends(require_roles([UserRole.HOSPITAL, UserRole.ADMIN]))):
+    """Register a new hospital"""
+    try:
+        # Check if hospital already exists
+        existing_hospital = await db.hospitals.find_one({
+            "$or": [
+                {"email": hospital_data.email},
+                {"license_number": hospital_data.license_number}
+            ]
+        })
+        if existing_hospital:
+            raise HTTPException(status_code=400, detail="Hospital with this email or license number already exists")
+        
+        hospital = Hospital(**hospital_data.dict())
+        await db.hospitals.insert_one(hospital.dict())
+        
+        # Link to user account if hospital role
+        if current_user.role == UserRole.HOSPITAL:
+            await db.users.update_one(
+                {"id": current_user.id},
+                {"$set": {"hospital_id": hospital.id}}
+            )
+        
+        return hospital
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@api_router.get("/hospitals", response_model=List[Hospital])
+@limiter.limit("20/minute")
+async def get_hospitals(request: Request, status: Optional[HospitalStatus] = None, current_user: User = Depends(get_current_user_optional)):
+    """Get list of hospitals"""
+    try:
+        query = {}
+        if status:
+            query["status"] = status.value
+        else:
+            # Non-admin users can only see verified hospitals
+            if not current_user or current_user.role != UserRole.ADMIN:
+                query["status"] = HospitalStatus.VERIFIED.value
+        
+        hospitals = await db.hospitals.find(query).to_list(1000)
+        return [Hospital(**hospital) for hospital in hospitals]
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@api_router.put("/hospitals/{hospital_id}/verify")
+@limiter.limit("10/minute")
+async def verify_hospital(request: Request, hospital_id: str, status: HospitalStatus, current_user: User = Depends(require_role(UserRole.ADMIN))):
+    """Verify or reject a hospital (Admin only)"""
+    try:
+        result = await db.hospitals.update_one(
+            {"id": hospital_id},
+            {"$set": {
+                "status": status.value,
+                "verified_at": datetime.utcnow() if status == HospitalStatus.VERIFIED else None,
+                "verified_by": current_user.id,
+                "updated_at": datetime.utcnow()
+            }}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Hospital not found")
+        
+        return {"message": f"Hospital status updated to {status.value}"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
 @api_router.get("/")
 @limiter.limit("10/minute")
 async def root(request: Request):
     return {
-        "message": "BloodConnect Emergency Response System API",
+        "message": "BloodConnect Emergency Response System API with Authentication",
         "disclaimer": "FOR DEMONSTRATION PURPOSES ONLY - Not for actual medical emergencies",
-        "version": "1.0.0"
+        "version": "2.0.0",
+        "features": ["Real-time alerts", "User authentication", "Hospital verification", "Role-based access"]
     }
 
 # Donor routes

@@ -11,6 +11,15 @@ const WS_URL = BACKEND_URL.replace('https', 'wss').replace('http', 'ws');
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const URGENCY_LEVELS = ["Critical", "Urgent", "Normal"];
 
+// Main App Component wrapped with Auth Provider
+function App() {
+  return (
+    <AuthProvider>
+      <BloodConnectApp />
+    </AuthProvider>
+  );
+}
+
 function BloodConnectApp() {
   const { user, logout, isAuthenticated, isDemo } = useAuth();
   const [activeTab, setActiveTab] = useState("home");
